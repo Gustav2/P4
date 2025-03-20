@@ -1,0 +1,31 @@
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 1
+set_global_assignment -name ENABLE_OCT_DONE OFF
+set_global_assignment -name USE_CONFIGURATION_DEVICE ON
+set_global_assignment -name CRC_ERROR_OPEN_DRAIN OFF
+set_global_assignment -name ENABLE_BOOT_SEL_PIN OFF
+set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -rise
+set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -fall
+set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -rise
+set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -fall
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
+set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+set_global_assignment -name LAST_QUARTUS_VERSION "18.1.0 Lite Edition"
+set_global_assignment -name FAMILY "Cyclone 10 LP"
+set_global_assignment -name DEVICE 10CL025YU256C8G
+set_global_assignment -name TOP_LEVEL_ENTITY fifo_test
+set_global_assignment -name NUM_PARALLEL_PROCESSORS 8
+set_global_assignment -name VHDL_FILE CYC1000_FIFO.vhd
+set_location_assignment PIN_R7 -to data_out[0]
+set_location_assignment PIN_T7 -to data_out[1]
+set_location_assignment PIN_R6 -to data_out[2]
+set_location_assignment PIN_T6 -to data_out[3]
+set_location_assignment PIN_R5 -to data_out[4]
+set_location_assignment PIN_T5 -to data_out[5]
+set_location_assignment PIN_R4 -to data_out[6]
+set_location_assignment PIN_T4 -to data_out[7]
+set_location_assignment PIN_R3 -to wr_en
+set_location_assignment PIN_T3 -to tx_ready
+set_location_assignment PIN_M2 -to clk

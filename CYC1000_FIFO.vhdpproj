@@ -1,0 +1,10 @@
+﻿<Project>
+  <ItemGroup>
+    <File Include="CYC1000_FIFO.vhd" />
+  </ItemGroup>
+  <PropertyGroup>
+    <HardwareStartPath>CYC1000_FIFO.vhd</HardwareStartPath>
+    <SelectedFpga>CYC1000</SelectedFpga>
+    <IoVoltage>3.3V</IoVoltage>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,10 @@
+# auto-generated
+[Libraries]
+work.files = [
+	'CYC1000_FIFO.vhd'
+]
+[libraries.work]
+files = [
+	'CYC1000_FIFO.vhd'
+]
+# auto-generated-end
