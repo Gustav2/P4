@@ -1,9 +1,9 @@
 ﻿<Project>
   <ItemGroup>
-    <File Include="CYC1000_FIFO.vhd" />
+    <File Include="serial_transmit.vhd" />
   </ItemGroup>
   <PropertyGroup>
-    <HardwareStartPath>CYC1000_FIFO.vhd</HardwareStartPath>
+    <HardwareStartPath>serial_transmit.vhd</HardwareStartPath>
     <SelectedFpga>CYC1000</SelectedFpga>
     <IoVoltage>3.3V</IoVoltage>
   </PropertyGroup>

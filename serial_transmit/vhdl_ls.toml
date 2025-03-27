@@ -1,10 +1,10 @@
 # auto-generated
 [Libraries]
 work.files = [
-	'CYC1000_FIFO.vhd'
+	'serial_transmit.vhd'
 ]
 [libraries.work]
 files = [
-	'CYC1000_FIFO.vhd'
+	'serial_transmit.vhd'
 ]
 # auto-generated-end
