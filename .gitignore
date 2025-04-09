@@ -42,3 +42,4 @@ mem_init/
 
 ## Folder for testing
 test/
+build/
