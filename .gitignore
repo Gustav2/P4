@@ -42,4 +42,10 @@ mem_init/
 
 ## Folder for testing
 test/
+<<<<<<< HEAD
 build/
+=======
+
+## VSCode config ignore (maybe not ignore in the future?? perchance)
+.vscode/
+>>>>>>> 7b2829f (Added wireshark dissector script, modified arduino spi sim code)

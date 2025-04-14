@@ -13,7 +13,7 @@ void loop() {
     byte spiDataOut = 0xA5;  // Test byte to send
     byte spiDataIn;
 
-    digitalWrite(SPI_SS, LOW); // Select slave
+    digitalWrite(SP_SS, LOW); // Select slave
     spiDataIn = SPI.transfer(spiDataOut); // Send & receive data
     digitalWrite(SPI_SS, HIGH); // Deselect slave
 
@@ -22,6 +22,9 @@ void loop() {
     Serial.print(spiDataOut, HEX);
     Serial.print(" SPI_IN: ");
     Serial.println(spiDataIn, HEX);
+    Serial.println(" SPI_SS: ")
+    Serial.println(digitalRead(SPI_SS) == LOW ? "LOW" : "HIGH");
 
-    //delay(100); // Slow down the loop for readability
+    delay(100); // Slow down the loop for readability
 }
+I
