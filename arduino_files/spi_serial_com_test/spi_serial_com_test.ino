@@ -12,19 +12,25 @@ void setup() {
 void loop() {
     byte spiDataOut = 0xA5;  // Test byte to send
     byte spiDataIn;
+    String outboundData;
 
-    digitalWrite(SP_SS, LOW); // Select slave
-    spiDataIn = SPI.transfer(spiDataOut); // Send & receive data
-    digitalWrite(SPI_SS, HIGH); // Deselect slave
+    // Select slave
+    digitalWrite(SPI_SS, LOW);
 
-    // Output the SPI data in a format Wireshark can read
-    Serial.print("SPI_OUT: ");
-    Serial.print(spiDataOut, HEX);
-    Serial.print(" SPI_IN: ");
-    Serial.println(spiDataIn, HEX);
-    Serial.println(" SPI_SS: ")
-    Serial.println(digitalRead(SPI_SS) == LOW ? "LOW" : "HIGH");
+    // Send & receive data
+    spiDataIn = SPI.transfer(spiDataOut);
 
-    delay(100); // Slow down the loop for readability
+    // Deselect slave
+    digitalWrite(SPI_SS, HIGH);
+
+    // Format the SPI data for Wireshark
+    outboundData = "SPI_OUT: " + String(spiDataOut, HEX).toUpperCase() + ", " +
+                   "SPI_IN: " + String(spiDataIn, HEX).toUpperCase() + ", " +
+                   "SPI_SS: " + (digitalRead(SPI_SS) == LOW ? "LOW" : "HIGH");
+
+    // Send the formatted data over Serial
+    Serial.println(outboundData);
+
+    // Slow down the loop for readability
+    delay(100);
 }
-I
