@@ -10,23 +10,25 @@ void setup() {
 }
 
 void loop() {
-    byte spiDataOut = 0xA5;  // Test byte to send
-    byte spiDataIn;
+    byte spiDataOut = random(0x00, 0xFF);  // Test byte to send, random
+    byte spiDataIn = random(0x00, 0xFF);   // Random too
     String outboundData;
 
-    // Select slave
-    digitalWrite(SPI_SS, LOW);
-
-    // Send & receive data
-    spiDataIn = SPI.transfer(spiDataOut);
-
-    // Deselect slave
-    digitalWrite(SPI_SS, HIGH);
+    // Randomly set SS to HIGH or LOW
+    int ssState = random(0, 2); // Generate random state (0 or 1)
+    digitalWrite(SPI_SS, ssState); // Set SS pin to the random state
 
     // Format the SPI data for Wireshark
-    outboundData = "SPI_OUT: " + String(spiDataOut, HEX).toUpperCase() + ", " +
-                   "SPI_IN: " + String(spiDataIn, HEX).toUpperCase() + ", " +
-                   "SPI_SS: " + (digitalRead(SPI_SS) == LOW ? "LOW" : "HIGH");
+
+    spiDataOutString = String(spiDataOut, HEX);
+    spiDataInString = String(spiDataIn, HEX);
+    // Convert to uppercase and add leading zeros
+    spiDataOutString.toUpperCase();
+    spiDataInString.toUpperCase();
+
+    outboundData = "SPI_OUT: " + spiDataOutString + ", " +
+                   "SPI_IN: " + spiDataInString + ", " +
+                   "SPI_SS: " + (ssState == 0 ? "0" : "1");
 
     // Send the formatted data over Serial
     Serial.println(outboundData);
