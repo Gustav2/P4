@@ -1,5 +1,6 @@
 #!/bin/bash
 rm -f work-obj93.cf
+rm -f work-obj08.cf
 rm -f *.vcd
 
 ghdl -a spi.vhd
