@@ -1,0 +1,7 @@
+v 4
+file . "spi_tb.vhd" "106a2ff50202f4a5f8bad76eaf368e070b20a016" "20250414120113.768":
+  entity spi_tb at 1( 0) + 0 on 25;
+  architecture behavioral of spi_tb at 9( 130) + 0 on 26;
+file . "spi.vhd" "64109640b6aa4de038360cc4e5ddc0b22da06e98" "20250414120110.617":
+  entity spi at 1( 0) + 0 on 23;
+  architecture behavioral of spi at 24( 770) + 0 on 24;

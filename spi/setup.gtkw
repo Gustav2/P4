@@ -1,0 +1,47 @@
+[*]
+[*] GTKWave Analyzer v3.3.120 (w)1999-2024 BSI
+[*] Mon Apr 14 12:34:18 2025
+[*]
+[dumpfile] "/home/gustavnybro/Projects/AAU/SPI/spi/spi_simulation.vcd"
+[dumpfile_mtime] "Mon Apr 14 12:02:46 2025"
+[dumpfile_size] 91115
+[savefile] "/home/gustavnybro/Projects/AAU/SPI/spi/test.gtkw"
+[timestart] 7520900000
+[size] 1854 1001
+[pos] -27 -24
+*-26.000000 7741600000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] spi_tb.
+[sst_width] 278
+[signals_width] 230
+[sst_expanded] 1
+[sst_vpaned_height] 297
+@22
+spi_tb.buffer_timestamp_tb[31:0]
+spi_tb.buffer_data_tb[7:0]
+@28
+spi_tb.buffer_wr_tb
+@22
+spi_tb.buffer_addr_tb[7:0]
+@200
+-
+@28
+spi_tb.clk_tb
+spi_tb.sclk_tb
+@200
+-
+@28
+spi_tb.miso_tb
+spi_tb.mosi_tb
+spi_tb.cs_tb
+@200
+-
+@28
+spi_tb.sclk_tb
+@200
+-
+-
+@28
+spi_tb.reset_tb
+spi_tb.sim_done
+[pattern_trace] 1
+[pattern_trace] 0
