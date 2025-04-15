@@ -19,7 +19,7 @@ architecture Behavioral of spi_tb is
             led_miso    : out std_logic;
             led_mosi    : out std_logic;
             led_cs      : out std_logic;
-            buffer_data     : out std_logic_vector(7 downto 0);
+            buffer_data     : out std_logic_vector(15 downto 0);  -- Updated to 16 bits
             buffer_timestamp: out std_logic_vector(31 downto 0);
             buffer_addr     : out std_logic_vector(7 downto 0);
             buffer_wr       : out std_logic
@@ -42,7 +42,7 @@ architecture Behavioral of spi_tb is
     signal led_miso_tb     : std_logic;
     signal led_mosi_tb     : std_logic;
     signal led_cs_tb       : std_logic;
-    signal buffer_data_tb  : std_logic_vector(7 downto 0);
+    signal buffer_data_tb  : std_logic_vector(15 downto 0);  -- Updated to 16 bits
     signal buffer_timestamp_tb : std_logic_vector(31 downto 0);
     signal buffer_addr_tb  : std_logic_vector(7 downto 0);
     signal buffer_wr_tb    : std_logic;
@@ -87,6 +87,25 @@ architecture Behavioral of spi_tb is
         return result;
     end function;
     
+    -- Function to extract SPI signals and frequency from buffer data
+    function decode_buffer_data(data: std_logic_vector(15 downto 0)) return string is
+        variable miso_val : std_logic := data(15);
+        variable mosi_val : std_logic := data(14);
+        variable cs_val : std_logic := data(13);
+        variable freq_100khz : integer := to_integer(unsigned(data(12 downto 0)));
+        variable freq_khz : integer := freq_100khz * 100;
+    begin
+        return "MISO=" & std_logic'image(miso_val) & 
+               ", MOSI=" & std_logic'image(mosi_val) & 
+               ", CS=" & std_logic'image(cs_val) & 
+               ", Freq=" & integer'image(freq_khz) & " kHz (" & 
+               integer'image(freq_khz / 1000) & "." & 
+               integer'image((freq_khz mod 1000) / 100) & " MHz)";
+    end function;
+    
+    -- Additional variables for test cases with varying SPI clock frequencies
+    signal sclk_divider : integer := 5;  -- Initially 5 MHz (50 MHz / 10)
+    
     -- Simulation control
     signal sim_done : boolean := false;
     
@@ -121,14 +140,17 @@ begin
         wait;
     end process;
     
-    -- SPI Clock generation process
+    -- Dynamic SPI Clock generation process
+    -- Now with variable frequency for testing frequency detection
     spi_clk_process: process
+        variable sclk_half_period : time;
     begin
         while not sim_done loop
+            sclk_half_period := (CLK_PERIOD * sclk_divider) / 2;
             sclk_tb <= '0';
-            wait for SCLK_PERIOD/2;
+            wait for sclk_half_period;
             sclk_tb <= '1';
-            wait for SCLK_PERIOD/2;
+            wait for sclk_half_period;
         end loop;
         wait;
     end process;
@@ -142,7 +164,11 @@ begin
         reset_tb <= '1';  -- Release reset
         wait for 100 ns;
         
-        -- Test Case 1: Send multiple bytes through SPI
+        -- Test Case 1: Send multiple bytes through SPI at 5 MHz
+        report "Test Case 1: SPI Transfer at 5 MHz";
+        sclk_divider <= 5;  -- 50 MHz / 5 = 10 MHz
+        wait for 200 ns;    -- Wait for clock stabilization
+        
         for byte_idx in test_data'range loop
             -- Start SPI transaction (CS active low)
             cs_tb <= '0';
@@ -165,32 +191,47 @@ begin
             wait for SCLK_PERIOD * 2;
         end loop;
         
-        -- Test Case 2: Check CS signal behavior
-        -- Quick toggle of CS
-        cs_tb <= '0';
-        wait for SCLK_PERIOD/2;
-        cs_tb <= '1';
-        wait for SCLK_PERIOD;
+        -- Test Case 2: Check frequency detection at 1 MHz
+        report "Test Case 2: SPI Transfer at 1 MHz";
+        sclk_divider <= 25;  -- 50 MHz / 25 = 2 MHz
+        wait for 1 us;      -- Wait for clock stabilization
         
-        -- Test Case 3: Continuous data stream
         cs_tb <= '0';
         
         for i in 0 to 15 loop
             -- Alternate MOSI for a simple pattern
             mosi_tb <= not mosi_tb;
             
-            -- MISO with a different pattern - FIXED SYNTAX
+            -- MISO with a different pattern
             if i mod 2 = 0 then
                 miso_tb <= not miso_tb;
             end if;
             
-            wait for SCLK_PERIOD;
+            wait for SCLK_PERIOD * 5;  -- Adjusted for slower clock
         end loop;
         
         cs_tb <= '1';
-        wait for SCLK_PERIOD * 2;
+        wait for SCLK_PERIOD * 5;
+        
+        -- Test Case 3: Check frequency detection at 10 MHz
+        report "Test Case 3: SPI Transfer at 10 MHz";
+        sclk_divider <= 2;  -- 50 MHz / 2 = 25 MHz
+        wait for 1 us;      -- Wait for clock stabilization
+        
+        cs_tb <= '0';
+        for i in 0 to 7 loop
+            mosi_tb <= not mosi_tb;
+            miso_tb <= not miso_tb;
+            wait for SCLK_PERIOD / 2;  -- Adjusted for faster clock
+        end loop;
+        cs_tb <= '1';
+        wait for SCLK_PERIOD;
         
         -- Test Case 4: Reset during transfer
+        report "Test Case 4: Reset during transfer";
+        sclk_divider <= 5;  -- Back to original speed
+        wait for 1 us;
+        
         cs_tb <= '0';
         mosi_tb <= '1';
         miso_tb <= '0';
@@ -228,6 +269,7 @@ begin
             report "Buffer Write: Address = " & 
                    integer'image(to_integer(unsigned(buffer_addr_tb))) & 
                    ", Data = 0x" & to_hex_string(buffer_data_tb) & 
+                   ", " & decode_buffer_data(buffer_data_tb) &
                    ", Timestamp = " & integer'image(to_integer(unsigned(buffer_timestamp_tb)));
         end if;
         

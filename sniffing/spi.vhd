@@ -14,7 +14,7 @@ entity spi is
         led_mosi    : out std_logic;
         led_cs      : out std_logic;
         -- Circular buffer output
-        buffer_data     : out std_logic_vector(7 downto 0);
+        buffer_data     : out std_logic_vector(15 downto 0);  -- Expanded to 16 bits
         buffer_timestamp: out std_logic_vector(31 downto 0);
         buffer_addr     : out std_logic_vector(7 downto 0);
         buffer_wr       : out std_logic
@@ -22,9 +22,9 @@ entity spi is
 end spi;
 
 architecture Behavioral of spi is
-    -- Buffer entry: 8-bit data + 32-bit timestamp
+    -- Buffer entry: 16-bit data + 32-bit timestamp
     type spi_sample is record
-        data      : std_logic_vector(7 downto 0);
+        data      : std_logic_vector(15 downto 0);  -- Expanded to 16 bits
         timestamp : std_logic_vector(31 downto 0);
     end record;
     -- Circular buffer type
@@ -45,6 +45,11 @@ architecture Behavioral of spi is
     
     -- Sampled SPI values
     signal miso_reg, mosi_reg, cs_reg : std_logic;
+    
+    -- Frequency calculation signals
+    signal system_clk_freq : unsigned(31 downto 0) := to_unsigned(50000000, 32);  -- Assuming 50 MHz system clock
+    signal calculated_freq : unsigned(31 downto 0) := (others => '0');           -- Frequency in Hz
+    signal freq_hz        : unsigned(12 downto 0) := (others => '0');           -- Frequency in Hz for buffer
 begin
     process(clk)
     begin
@@ -57,6 +62,8 @@ begin
                 sclk_prev         <= '0';
                 buffer_wr         <= '0';
                 sclk_rising       <= '0';
+                calculated_freq   <= (others => '0');
+                freq_hz           <= (others => '0');
             else
                 -- Timestamp increment
                 timestamp_counter <= timestamp_counter + 1;
@@ -77,6 +84,19 @@ begin
                 end if;
                 sclk_prev <= sclk;
                 
+                -- Calculate actual frequency in Hz
+                -- Frequency = System clock frequency / Period
+                if sclk_period > 0 and sclk_period < system_clk_freq then
+                    calculated_freq <= system_clk_freq / sclk_period;
+                    -- Convert to 100 kHz units (divide by 100,000)
+                    -- Integer division by 100,000 is equivalent to shifting right by 16.61 bits
+                    -- We'll use a 17-bit shift for simplicity and efficiency (divide by 131,072)
+                    freq_hz <= resize(calculated_freq(31 downto 17), 13);
+                else
+                    calculated_freq <= (others => '0');
+                    freq_hz <= (others => '0');
+                end if;
+                
                 -- On SCLK rising edge
                 if sclk_rising = '1' then
                     -- Sample SPI lines
@@ -90,11 +110,12 @@ begin
                     led_cs   <= cs;
                     
                     -- Create and store sample
-                    circ_buffer(to_integer(write_ptr)).data      <= miso & mosi & cs & "00000";
+                    -- Format: First 3 bits for SPI signals, remaining 13 bits for frequency in Hz
+                    circ_buffer(to_integer(write_ptr)).data      <= miso & mosi & cs & std_logic_vector(freq_hz);
                     circ_buffer(to_integer(write_ptr)).timestamp <= std_logic_vector(timestamp_counter);
                     
                     -- Output buffer values for UART/reader
-                    buffer_data      <= miso & mosi & cs & "00000";
+                    buffer_data      <= miso & mosi & cs & std_logic_vector(freq_hz);
                     buffer_timestamp <= std_logic_vector(timestamp_counter);
                     buffer_addr      <= std_logic_vector(write_ptr);
                     buffer_wr        <= '1';
