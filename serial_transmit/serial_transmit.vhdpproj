@@ -1,6 +1,9 @@
 ﻿<Project>
   <ItemGroup>
+    <File Include="1s_usb_speed_test_tb.vcd" />
     <File Include="serial_transmit.vhd" />
+    <File Include="serial_transmit_Sim.ghdp" />
+    <File Include="usb_speed_test_tb.vcd" />
   </ItemGroup>
   <PropertyGroup>
     <HardwareStartPath>serial_transmit.vhd</HardwareStartPath>

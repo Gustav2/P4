@@ -31,7 +31,7 @@ architecture Behavioral of usb_speed_test is
     
 begin
     -- Output debug info on LEDs
-    led_out <= std_logic_vector(bytes_sent(23 downto 16));
+    led_out <= std_logic_vector(bytes_sent(26 downto 19));
     
     -- Main process
     process(clk, rst_n)

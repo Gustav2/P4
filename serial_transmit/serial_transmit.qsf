@@ -16,7 +16,7 @@ set_global_assignment -name LAST_QUARTUS_VERSION "24.1std.0 Lite Edition"
 set_global_assignment -name FAMILY "Cyclone V"
 set_global_assignment -name DEVICE 5CEBA2U15C8
 set_global_assignment -name TOP_LEVEL_ENTITY usb_speed_test
-set_global_assignment -name NUM_PARALLEL_PROCESSORS 16
+set_global_assignment -name NUM_PARALLEL_PROCESSORS 8
 set_global_assignment -name VHDL_FILE serial_transmit.vhd
 set_location_assignment PIN_F14 -to clk
 set_location_assignment PIN_P4 -to led_out[0]
