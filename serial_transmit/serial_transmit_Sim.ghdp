@@ -1,0 +1,47 @@
+Component usb_speed_test_tb()
+{
+    SIGNAL finished : STD_LOGIC:= '0';
+    CONSTANT period_time : TIME := 83333 ps;
+
+    Process Sim_finished()
+    {
+        wait for 100000 us;
+        finished <= '1';
+        wait;
+    }
+
+    NewComponent usb_speed_test
+    (
+        CLK => CLK,
+        rst_n => rst_n,
+        uart_txd => uart_txd,
+        led_out => led_out,
+    );
+
+    SIGNAL CLK : STD_LOGIC ;
+    SIGNAL rst_n : STD_LOGIC ;
+    SIGNAL uart_txd : STD_LOGIC ;
+    SIGNAL led_out : STD_LOGIC_VECTOR (7 downto 0);
+
+
+    Process Sim_clk()
+    {
+        While(finished /= '1')
+        {
+            clk <= '1';
+            wait for period_time/2;
+            clk <= '0';
+            wait for period_time/2;
+        }
+        wait;
+    }
+
+    Process Sim_rst_n()
+    {
+        While(finished /= '1')
+        {
+            wait;
+        }
+        wait;
+    }
+}
