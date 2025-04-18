@@ -4,9 +4,9 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity spi is
     Port (
-        clk         : in  std_logic;              -- System clock (e.g., 50 MHz)
+        clk         : in  std_logic;              
         reset       : in  std_logic;
-        sclk        : in  std_logic;              -- SPI clock
+        sclk        : in  std_logic;              
         miso        : in  std_logic;
         mosi        : in  std_logic;
         cs          : in  std_logic;
@@ -14,17 +14,16 @@ entity spi is
         led_mosi    : out std_logic;
         led_cs      : out std_logic;
         -- Circular buffer output
-        buffer_data     : out std_logic_vector(15 downto 0);  -- Expanded to 16 bits
-        buffer_timestamp: out std_logic_vector(31 downto 0);
-        buffer_addr     : out std_logic_vector(7 downto 0);
-        buffer_wr       : out std_logic
+        buffer_data : out std_logic_vector(47 downto 0);  -- 16 bits for data (miso, mosi, cs, (13) sclk freq)
+        buffer_addr : out std_logic_vector(7 downto 0);
+        buffer_wr   : out std_logic
     );
 end spi;
 
 architecture Behavioral of spi is
     -- Buffer entry: 16-bit data + 32-bit timestamp
     type spi_sample is record
-        data      : std_logic_vector(15 downto 0);  -- Expanded to 16 bits
+        data      : std_logic_vector(15 downto 0);  
         timestamp : std_logic_vector(31 downto 0);
     end record;
     -- Circular buffer type
@@ -47,7 +46,7 @@ architecture Behavioral of spi is
     signal miso_reg, mosi_reg, cs_reg : std_logic;
     
     -- Frequency calculation signals
-    signal system_clk_freq : unsigned(31 downto 0) := to_unsigned(50000000, 32);  -- Assuming 50 MHz system clock
+    signal system_clk_freq : unsigned(31 downto 0) := to_unsigned(200000000, 32);  -- Assuming 50 MHz system clock
     signal calculated_freq : unsigned(31 downto 0) := (others => '0');           -- Frequency in Hz
     signal freq_hz        : unsigned(12 downto 0) := (others => '0');           -- Frequency in Hz for buffer
 begin
@@ -72,11 +71,8 @@ begin
                 buffer_wr <= '0';
                 sclk_rising <= '0';
                 
-                -- SCLK edge detection
                 if sclk = '1' and sclk_prev = '0' then
-                    -- Rising edge detected
                     sclk_rising <= '1';
-                    -- Store frequency
                     sclk_period  <= sclk_counter;
                     sclk_counter <= (others => '0');
                 else
@@ -97,30 +93,23 @@ begin
                     freq_hz <= (others => '0');
                 end if;
                 
-                -- On SCLK rising edge
                 if sclk_rising = '1' then
-                    -- Sample SPI lines
                     miso_reg <= miso;
                     mosi_reg <= mosi;
                     cs_reg   <= cs;
                     
-                    -- Update LEDs
-                    led_miso <= miso;
+                    -- Update LEDs (could be removed in future)
+						  led_miso <= miso;
                     led_mosi <= mosi;
                     led_cs   <= cs;
                     
-                    -- Create and store sample
-                    -- Format: First 3 bits for SPI signals, remaining 13 bits for frequency in Hz
                     circ_buffer(to_integer(write_ptr)).data      <= miso & mosi & cs & std_logic_vector(freq_hz);
                     circ_buffer(to_integer(write_ptr)).timestamp <= std_logic_vector(timestamp_counter);
                     
-                    -- Output buffer values for UART/reader
-                    buffer_data      <= miso & mosi & cs & std_logic_vector(freq_hz);
-                    buffer_timestamp <= std_logic_vector(timestamp_counter);
-                    buffer_addr      <= std_logic_vector(write_ptr);
-                    buffer_wr        <= '1';
+                    buffer_data <= std_logic_vector(timestamp_counter) & miso & mosi & cs & std_logic_vector(freq_hz);
+                    buffer_addr <= std_logic_vector(write_ptr);
+                    buffer_wr   <= '1';
                     
-                    -- Advance circular buffer pointer
                     write_ptr <= write_ptr + 1;
                 end if;
             end if;

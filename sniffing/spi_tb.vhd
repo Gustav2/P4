@@ -19,16 +19,15 @@ architecture Behavioral of spi_tb is
             led_miso    : out std_logic;
             led_mosi    : out std_logic;
             led_cs      : out std_logic;
-            buffer_data     : out std_logic_vector(15 downto 0);  -- Updated to 16 bits
-            buffer_timestamp: out std_logic_vector(31 downto 0);
-            buffer_addr     : out std_logic_vector(7 downto 0);
-            buffer_wr       : out std_logic
+            buffer_data : out std_logic_vector(47 downto 0);  -- Updated to 48 bits (timestamp + data)
+            buffer_addr : out std_logic_vector(7 downto 0);
+            buffer_wr   : out std_logic
         );
     end component;
     
     -- Testbench constants
-    constant CLK_PERIOD : time := 20 ns;        -- 50 MHz system clock
-    constant SCLK_PERIOD : time := 200 ns;      -- 5 MHz SPI clock (typical)
+    constant CLK_PERIOD : time := 5 ns;        -- 50 MHz system clock
+    constant SCLK_PERIOD : time := 20 ns;      -- 5 MHz SPI clock (typical)
     
     -- Testbench signals
     signal clk_tb          : std_logic := '0';
@@ -42,8 +41,7 @@ architecture Behavioral of spi_tb is
     signal led_miso_tb     : std_logic;
     signal led_mosi_tb     : std_logic;
     signal led_cs_tb       : std_logic;
-    signal buffer_data_tb  : std_logic_vector(15 downto 0);  -- Updated to 16 bits
-    signal buffer_timestamp_tb : std_logic_vector(31 downto 0);
+    signal buffer_data_tb  : std_logic_vector(47 downto 0);  -- Updated to 48 bits (timestamp + data)
     signal buffer_addr_tb  : std_logic_vector(7 downto 0);
     signal buffer_wr_tb    : std_logic;
     
@@ -88,7 +86,8 @@ architecture Behavioral of spi_tb is
     end function;
     
     -- Function to extract SPI signals and frequency from buffer data
-    function decode_buffer_data(data: std_logic_vector(15 downto 0)) return string is
+    function decode_buffer_data(data: std_logic_vector(47 downto 0)) return string is
+        variable timestamp : unsigned(31 downto 0) := unsigned(data(47 downto 16));
         variable miso_val : std_logic := data(15);
         variable mosi_val : std_logic := data(14);
         variable cs_val : std_logic := data(13);
@@ -100,7 +99,8 @@ architecture Behavioral of spi_tb is
                ", CS=" & std_logic'image(cs_val) & 
                ", Freq=" & integer'image(freq_khz) & " kHz (" & 
                integer'image(freq_khz / 1000) & "." & 
-               integer'image((freq_khz mod 1000) / 100) & " MHz)";
+               integer'image((freq_khz mod 1000) / 100) & " MHz)" &
+               ", Timestamp=" & integer'image(to_integer(timestamp));
     end function;
     
     -- Additional variables for test cases with varying SPI clock frequencies
@@ -123,7 +123,6 @@ begin
         led_mosi => led_mosi_tb,
         led_cs => led_cs_tb,
         buffer_data => buffer_data_tb,
-        buffer_timestamp => buffer_timestamp_tb,
         buffer_addr => buffer_addr_tb,
         buffer_wr => buffer_wr_tb
     );
@@ -269,8 +268,7 @@ begin
             report "Buffer Write: Address = " & 
                    integer'image(to_integer(unsigned(buffer_addr_tb))) & 
                    ", Data = 0x" & to_hex_string(buffer_data_tb) & 
-                   ", " & decode_buffer_data(buffer_data_tb) &
-                   ", Timestamp = " & integer'image(to_integer(unsigned(buffer_timestamp_tb)));
+                   ", " & decode_buffer_data(buffer_data_tb);
         end if;
         
         if sim_done then
