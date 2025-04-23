@@ -71,6 +71,13 @@ bool configure_serial_port(int fd, int baudrate) {
         write(fd, &header, sizeof(header));
     }
 
+    struct pcaprec_hdr_t {
+        uint32_t ts_sec;         // timestamp seconds
+        uint32_t ts_usec;        // timestamp microseconds
+        uint32_t incl_len;       // number of bytes of packet saved in file
+        uint32_t orig_len;       // actual length of packet
+    };
+    
 int run_extcap_capture(const std::string& fifo_path, const std::string& device_path) {
     std::cerr << "[DEBUG] Entered run_extcap_capture()\n";
 
@@ -81,12 +88,12 @@ int run_extcap_capture(const std::string& fifo_path, const std::string& device_p
     }
 
     std::cerr << "[DEBUG] Writing PCAP header...\n";
-    write_pcap_global_header(fd_fifo); // ✅ Write header early
+    write_pcap_global_header(fd_fifo);
 
     int fd_uart = open(device_path.c_str(), O_RDWR | O_NOCTTY);
     if (fd_uart < 0) {
         std::cerr << "[ERROR] Could not open UART: " << strerror(errno) << "\n";
-        close(fd_fifo); // Don't forget to close
+        close(fd_fifo);
         return 1;
     }
 
@@ -102,16 +109,27 @@ int run_extcap_capture(const std::string& fifo_path, const std::string& device_p
     while (true) {
         ssize_t bytes_read = read(fd_uart, buffer, BUFFER_SIZE);
         if (bytes_read > 0) {
-            ssize_t bytes_written = write(fd_fifo, buffer, bytes_read);
-            if (bytes_written != bytes_read) {
-                std::cerr << "Warning: not all bytes written to FIFO!" << std::endl;
-            }
+            // Get current time
+            auto now = std::chrono::system_clock::now();
+            auto duration = now.time_since_epoch();
+            auto micros = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
+
+            uint32_t ts_sec = micros / 1000000;
+            uint32_t ts_usec = micros % 1000000;
+
+            pcaprec_hdr_t pkt_header;
+            pkt_header.ts_sec = ts_sec;
+            pkt_header.ts_usec = ts_usec;
+            pkt_header.incl_len = bytes_read;
+            pkt_header.orig_len = bytes_read;
+
+            write(fd_fifo, &pkt_header, sizeof(pkt_header));
+            write(fd_fifo, buffer, bytes_read);
         } else {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }
 
-    std::cerr << "[DEBUG] Done capturing\n";
     close(fd_uart);
     close(fd_fifo);
     return 0;
