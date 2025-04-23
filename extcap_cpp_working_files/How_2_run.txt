@@ -1,0 +1,14 @@
+So to run the two test we can:
+
+First, before test run:
+make clean && make
+
+Test the speed in terminal, will auto close after 300 ms, if no data, will also close if no usb found:
+./build/extcap_uart
+
+Hexdump test in terminal, will auto close after 300 ms, if no data, will also close if no usb found (use two terminals one to run and one to show):
+First terminal:
+./build/extcap_uart --capture --fifo=test.fifo
+
+Second terminal:
+cat test.fifo | hexdump -C

@@ -72,20 +72,17 @@ bool configure_serial_port(int fd, int baudrate) {
     }
 
 int run_extcap_capture(const std::string& fifo_path, const std::string& device_path) {
-    std::cerr << "[DEBUG] Entered run_extcap_capture()\n";
-
     int fd_fifo = open(fifo_path.c_str(), O_WRONLY);
     if (fd_fifo < 0) {
-        std::cerr << "[ERROR] Could not open FIFO: " << strerror(errno) << "\n";
+        std::cerr << "Failed to open FIFO: " << strerror(errno) << std::endl;
         return 1;
     }
 
-    std::cerr << "[DEBUG] Writing PCAP header...\n";
     write_pcap_global_header(fd_fifo); // ✅ Write header early
 
-    int fd_uart = open(device_path.c_str(), O_RDWR | O_NOCTTY);
+    int fd_uart = open(device_path.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
     if (fd_uart < 0) {
-        std::cerr << "[ERROR] Could not open UART: " << strerror(errno) << "\n";
+        std::cerr << "Failed to open UART: " << strerror(errno) << std::endl;
         close(fd_fifo); // Don't forget to close
         return 1;
     }
@@ -111,7 +108,6 @@ int run_extcap_capture(const std::string& fifo_path, const std::string& device_p
         }
     }
 
-    std::cerr << "[DEBUG] Done capturing\n";
     close(fd_uart);
     close(fd_fifo);
     return 0;
@@ -121,72 +117,57 @@ int main(int argc, char* argv[]) {
     std::cerr << "Arguments passed to extcap_uart:\n";
     for (int i = 0; i < argc; ++i) {
         std::cerr << "  argv[" << i << "] = " << argv[i] << "\n";
-    }
+    }    
 
     std::string interface_name = "fpga_uart";
-    
-    bool capture_mode = false;
-
-    // First pass: check if capture mode is requested
-    for (int i = 1; i < argc; ++i) {
-        if (std::string(argv[i]) == "--capture") {
-            capture_mode = true;
-            break;
-        }
-    }
-
-    if (!capture_mode) {
-        // Handle extcap discovery options
-        for (int i = 1; i < argc; ++i) {
-            std::string arg(argv[i]);
-
-            if (arg == "--extcap-interfaces") {
-                std::cout << "extcap {version=1.0}{help=https://example.com/help}\n";
-                std::cout << "interface {value=" << interface_name << "}{display=FPGA UART Interface}\n";
-                return 0;
-            } else if (arg == "--extcap-interface" && i + 1 < argc) {
-                std::string iface(argv[++i]);
-                if (iface == interface_name) {
-                    std::cout << "dlt {number=147}{name=USER0}{display=User DLT 0}\n";
-                    return 0;
-                }
-            } else if (arg == "--extcap-config") {
-                std::cout << "arg {number=0}{call=--serial-device}{display=Serial Device}"
-                            "{tooltip=Select the UART device}{type=selector}{required=true}{group=UART}\n";
-                for (const auto& dev : list_uart_devices()) {
-                    std::cout << "value {arg=0}{value=" << dev << "}{display=" << dev << "}\n";
-                }
-                return 0;
-            } else if (arg == "--extcap-version") {
-                std::cout << "extcap_uart version 1.0\n";
-                return 0;
-            }
-        }
-    }
-
     std::string fifo_path;
     std::string selected_device;
 
     for (int i = 1; i < argc; ++i) {
         std::string arg(argv[i]);
-        if (arg == "--fifo" && i + 1 < argc) {
+
+        if (arg == "--extcap-interfaces") {
+            std::cout << "extcap {version=1.0}{help=https://example.com/help}\n";
+            std::cout << "interface {value=" << interface_name << "}{display=FPGA UART Interface}\n";
+            return 0;
+        } else if (arg == "--extcap-interface") {
+            if (i + 1 < argc && argv[i + 1] == interface_name) {
+                std::cout << "dlt {number=147}{name=USER0}{display=User DLT 0}\n";
+                return 0;
+            }
+        } else if (arg == "--extcap-config") {
+            std::cout << "arg {number=0}{call=--serial-device}{display=Serial Device}{tooltip=Select the UART device}"
+                         "{type=selector}{required=true}{group=UART}\n";
+            for (const auto& dev : list_uart_devices()) {
+                std::cout << "value {arg=0}{value=" << dev << "}{display=" << dev << "}\n";
+            }
+            return 0;
+        } else if (arg == "--capture") {
+            // Start capture after parsing all args
+        } else if (arg == "--fifo" && i + 1 < argc) {
             fifo_path = argv[++i];
         } else if (arg == "--serial-device" && i + 1 < argc) {
             selected_device = argv[++i];
+        } else if (arg == "--extcap-version") {
+            std::cout << "extcap_uart version 1.0\n";
+            return 0;
         }
     }
 
-    if (capture_mode) {
-        std::cerr << "Running capture mode:\n";
-        std::cerr << "  Interface: " << interface_name << "\n";
-        std::cerr << "  FIFO: " << fifo_path << "\n";
-        std::cerr << "  UART: " << selected_device << "\n";
-
-        if (!fifo_path.empty() && !selected_device.empty()) {
-            return run_extcap_capture(fifo_path, selected_device);
-        } else {
-            std::cerr << "Missing fifo or serial-device!\n";
-            return 1;
-        }
+    if (!fifo_path.empty() && !selected_device.empty()) {
+        std::cerr << "Running capture with:\n";
+        std::cerr << "  FIFO = " << fifo_path << "\n";
+        std::cerr << "  UART = " << selected_device << "\n";
+        return run_extcap_capture(fifo_path, selected_device);
     }
+
+    std::cerr << "Missing required arguments (--fifo and --serial-device)\n";
+
+    if (!fifo_path.empty() && !selected_device.empty()) {
+        return run_extcap_capture(fifo_path, selected_device);
+    }
+
+    std::cerr << "Missing required arguments (--fifo and --serial-device)\n";
+    return 1;
 }
+

@@ -1,23 +1,22 @@
 # Makefile for extcap_uart
 
-TARGET = extcap_uart
-BUILD_DIR = build
-SRC = src/main.cpp
-INSTALL_PATH = /usr/lib/x86_64-linux-gnu/wireshark/extcap
-
 CXX = g++
 CXXFLAGS = -O2 -Wall -std=c++17
+LDFLAGS =
+TARGET = build/extcap_uart
+SRC = src/main.cpp
 
-all: $(BUILD_DIR)/$(TARGET)
+.PHONY: all clean install
 
-$(BUILD_DIR)/$(TARGET): $(SRC)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+all: $(TARGET)
+
+$(TARGET): $(SRC)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
+install: $(TARGET)
+	sudo cp $(TARGET) /usr/lib/x86_64-linux-gnu/wireshark/extcap/
+	sudo chmod +x /usr/lib/x86_64-linux-gnu/wireshark/extcap/$(notdir $(TARGET))
 
 clean:
-	rm -f $(BUILD_DIR)/$(TARGET)
-
-install: $(BUILD_DIR)/$(TARGET)
-	sudo cp $(BUILD_DIR)/$(TARGET) $(INSTALL_PATH)/
-	sudo chmod +x $(INSTALL_PATH)/$(TARGET)
-
-reinstall: clean all install
+	rm -f $(TARGET)
