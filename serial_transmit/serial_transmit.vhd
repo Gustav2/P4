@@ -13,7 +13,7 @@ end usb_speed_test;
 
 architecture Behavioral of usb_speed_test is
     -- Constants
-    constant TEST_SIZE      : integer := 100_000_000;  -- Number of bytes to send (100MB)
+    constant TEST_SIZE      : integer := 20;  -- Number of bytes to send
     constant CLK_FREQ       : integer := 12_000_000;  -- 12MHz system clock
     constant BAUD_RATE      : integer := 12_000_000;  -- Increased to 12Mbaud
     constant CYCLES_PER_BIT : integer := CLK_FREQ / BAUD_RATE;  -- 1 cycle per bit
@@ -23,7 +23,7 @@ architecture Behavioral of usb_speed_test is
     signal state : state_type := IDLE;
     
     -- Internal signals
-    signal bit_counter     : integer range 0 to 10 := 0;
+    signal bit_counter     : integer range 0 to 7 := 0;
     signal data_pattern    : unsigned(7 downto 0) := (others => '0');
     signal bytes_sent      : unsigned(31 downto 0) := (others => '0');
     signal current_byte    : std_logic_vector(7 downto 0) := (others => '0');
@@ -50,6 +50,7 @@ begin
             case state is
                 when IDLE =>
                     uart_txd <= '1';  -- Idle
+                    report "IDLE_TXD: " & std_logic'image(uart_txd);
                     bit_counter <= 0;
                     bytes_sent <= (others => '0');
                     transfer_active <= '1';
@@ -57,12 +58,14 @@ begin
                     
                 when SEND_START =>
                     uart_txd <= '0';  -- Start bit
+                    report "Start_TXD: " & std_logic'image(uart_txd);
                     current_byte <= std_logic_vector(data_pattern);
                     bit_counter <= 0;
                     state <= SEND_DATA;
                     
                 when SEND_DATA =>
                     uart_txd <= current_byte(bit_counter);
+                    report "data_TXD: " & std_logic'image(uart_txd);
                     if bit_counter < 7 then
                         bit_counter <= bit_counter + 1;
                     else
@@ -71,6 +74,7 @@ begin
                     
                 when SEND_STOP =>
                     uart_txd <= '1';  -- Stop bit
+                    report "stop_TXD: " & std_logic'image(uart_txd);
                     data_pattern <= data_pattern + 1;
                     bytes_sent <= bytes_sent + 1;
                     
