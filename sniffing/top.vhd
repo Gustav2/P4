@@ -15,7 +15,7 @@ entity top is
         led_miso     : out std_logic;
         led_mosi     : out std_logic;
         led_cs       : out std_logic;
-		  led_sclk     : out std_logic;
+        led_sclk     : out std_logic;
         led_pll_lock : out std_logic;           -- LED to indicate PLL lock status
         -- transmit
         uart_txd     : out std_logic
@@ -43,7 +43,8 @@ Port (
     led_miso    : out std_logic;
     led_mosi    : out std_logic;
     led_cs      : out std_logic;
-    buffer_data : out std_logic_vector(47 downto 0);  -- Updated to 48-bit combined data
+    led_sclk    : out std_logic;
+    buffer_data : out std_logic_vector(47 downto 0);
     buffer_addr : out std_logic_vector(7 downto 0);
     buffer_wr   : out std_logic
 );
@@ -51,33 +52,34 @@ end component;
 
 component usb_speed_test
 Port (
-    clk         : in  STD_LOGIC;
-    rst_n       : in  STD_LOGIC;
-    uart_txd    : out STD_LOGIC;
-    led_out     : out STD_LOGIC_VECTOR(7 downto 0);
-    data_in     : in  std_logic_vector(7 downto 0);
-    data_valid  : in  std_logic
+    clk           : in  STD_LOGIC;
+    rst_n         : in  STD_LOGIC;
+    uart_txd      : out STD_LOGIC;
+    led_out       : out STD_LOGIC_VECTOR(7 downto 0);
+    buffer_data   : in  std_logic_vector(47 downto 0);
+    buffer_wr     : in  std_logic;
+    buffer_rd_addr: out std_logic_vector(7 downto 0)
 );
 end component;
 
     -- Signal declarations
-signal clk_200mhz   : std_logic;
-signal pll_locked   : std_logic;
-signal reset_sync   : std_logic;
+signal clk_200mhz      : std_logic;
+signal pll_locked      : std_logic;
+signal reset_sync      : std_logic;
 
-    -- Buffer signals (if needed externally)
-signal buffer_data_out  : std_logic_vector(47 downto 0);  -- Updated to 48-bit combined data+timestamp
-signal buffer_addr_out  : std_logic_vector(7 downto 0);
-signal buffer_wr_out    : std_logic;
+    -- Buffer signals
+signal buffer_data_out : std_logic_vector(47 downto 0);
+signal buffer_addr_out : std_logic_vector(7 downto 0);
+signal buffer_wr_out   : std_logic;
+signal buffer_rd_addr  : std_logic_vector(7 downto 0);
 
-    -- Optional: Extracted signals for use elsewhere if needed
-signal data_portion     : std_logic_vector(15 downto 0);  -- Lower 16 bits
-signal timestamp_portion: std_logic_vector(31 downto 0);  -- Upper 32 bits
+    -- Buffer memory to store SPI data
+type buffer_mem_type is array (0 to 255) of std_logic_vector(47 downto 0);
+signal buffer_mem      : buffer_mem_type := (others => (others => '0'));
+signal buffer_data_read: std_logic_vector(47 downto 0);
 
-    -- transmit signal declarations
-signal uart_tx      : std_logic;
-signal led_debug    : std_logic_vector(7 downto 0);
-
+    -- Debug signals
+signal led_debug       : std_logic_vector(7 downto 0);
 
 begin
     -- Instantiate the PLL
@@ -94,7 +96,7 @@ begin
     -- Instantiate the SPI module
     spi_inst: spi
     port map (
-        clk         => clk_200mhz,     -- Using 200 MHz clock
+        clk         => clk_12mhz,    -- Using 200 MHz clock
         reset       => reset_sync,
         sclk        => sclk,
         miso        => miso,
@@ -103,31 +105,39 @@ begin
         led_miso    => led_miso,
         led_mosi    => led_mosi,
         led_cs      => led_cs,
-		  led_sclk	  => led_sclk,
-        buffer_data => buffer_data_out,  -- Connect to the 48-bit combined data
+        led_sclk    => led_sclk,
+        buffer_data => buffer_data_out,
         buffer_addr => buffer_addr_out,
         buffer_wr   => buffer_wr_out
     );
     
-    usb_tx_inst : usb_speed_test
-    port map (
-        clk         => clk_12mhz,       -- 12 MHz clock
-        rst_n       => reset_n,
-        uart_txd    => uart_tx,
-        led_out     => led_debug,
-        data_in     => data_portion(7 downto 0),  -- Only lower 8 bits for now
-        data_valid  => buffer_wr_out              -- Use SPI buffer write signal
-    );
-
+    -- Shared buffer implementation
+    process(clk_12mhz)
+    begin
+        if rising_edge(clk_12mhz) then
+            -- Write to buffer when SPI writes
+            if buffer_wr_out = '1' then
+                buffer_mem(to_integer(unsigned(buffer_addr_out))) <= buffer_data_out;
+            end if;
+            
+            -- Read from buffer for USB TX
+            buffer_data_read <= buffer_mem(to_integer(unsigned(buffer_rd_addr)));
+        end if;
+    end process;
     
-    -- Optional: Extract data and timestamp portions if needed elsewhere in the design
-    data_portion      <= buffer_data_out(15 downto 0);       -- Lower 16 bits contain the original data
-    timestamp_portion <= buffer_data_out(47 downto 16);      -- Upper 32 bits contain the timestamp
+    -- Instantiate the USB transmitter module
+    usb_tx_inst: usb_speed_test
+    port map (
+        clk           => clk_12mhz,
+        rst_n         => reset_n,
+        uart_txd      => uart_txd,
+        led_out       => led_debug,
+        buffer_data   => buffer_data_read,
+        buffer_wr     => buffer_wr_out,
+        buffer_rd_addr=> buffer_rd_addr
+    );
     
     -- Connect PLL lock indicator to LED
     led_pll_lock <= pll_locked;
-    
-    uart_txd <= uart_tx;
-
     
 end Behavioral;

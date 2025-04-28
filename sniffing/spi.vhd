@@ -4,16 +4,16 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity spi is
     Port (
-        clk         : in  std_logic;              
+        clk         : in  std_logic;
         reset       : in  std_logic;
-        sclk        : in  std_logic;              
+        sclk        : in  std_logic;
         miso        : in  std_logic;
         mosi        : in  std_logic;
         cs          : in  std_logic;
         led_miso    : out std_logic;
         led_mosi    : out std_logic;
         led_cs      : out std_logic;
-		  led_sclk	  : out std_logic;
+        led_sclk    : out std_logic;
         -- Circular buffer output
         buffer_data : out std_logic_vector(47 downto 0);  -- 16 bits for data (miso, mosi, cs, (13) sclk freq)
         buffer_addr : out std_logic_vector(7 downto 0);
@@ -24,7 +24,7 @@ end spi;
 architecture Behavioral of spi is
     -- Buffer entry: 16-bit data + 32-bit timestamp
     type spi_sample is record
-        data      : std_logic_vector(15 downto 0);  
+        data      : std_logic_vector(15 downto 0);
         timestamp : std_logic_vector(31 downto 0);
     end record;
     -- Circular buffer type
@@ -93,20 +93,20 @@ begin
                     calculated_freq <= (others => '0');
                     freq_hz <= (others => '0');
                 end if;
-										led_miso <= miso;
-				  led_mosi <= mosi;
-				  led_cs   <= cs;
-				  led_sclk <= sclk;
-			
+                led_sclk <= sclk;
+                
                 
                 if sclk_rising = '1' then
                     miso_reg <= miso;
                     mosi_reg <= mosi;
                     cs_reg   <= cs;
+                    led_miso <= miso;
+                    led_mosi <= mosi;
+                    led_cs   <= cs;
 
                     
                     -- Update LEDs (could be removed in future)
-						  
+                    
                     
                     circ_buffer(to_integer(write_ptr)).data      <= miso & mosi & cs & std_logic_vector(freq_hz);
                     circ_buffer(to_integer(write_ptr)).timestamp <= std_logic_vector(timestamp_counter);
