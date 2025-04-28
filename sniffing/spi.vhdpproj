@@ -1,0 +1,14 @@
+﻿<Project>
+  <ItemGroup>
+    <File Include="pll_200mhz.vhd" />
+    <File Include="serial_transmit.vhd" />
+    <File Include="spi.vhd" />
+    <File Include="spi_tb.vhd" />
+    <File Include="top.vhd" />
+  </ItemGroup>
+  <PropertyGroup>
+    <HardwareStartPath>top.vhd</HardwareStartPath>
+    <SelectedFpga>CYC1000</SelectedFpga>
+    <IoVoltage>3.3V</IoVoltage>
+  </PropertyGroup>
+</Project>
