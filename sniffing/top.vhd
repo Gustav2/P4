@@ -15,6 +15,7 @@ entity top is
         led_miso     : out std_logic;
         led_mosi     : out std_logic;
         led_cs       : out std_logic;
+		  led_sclk     : out std_logic;
         led_pll_lock : out std_logic            -- LED to indicate PLL lock status
     );
 end top;
@@ -40,6 +41,7 @@ architecture Behavioral of top is
             led_miso    : out std_logic;
             led_mosi    : out std_logic;
             led_cs      : out std_logic;
+				led_sclk    : out std_logic;
             buffer_data : out std_logic_vector(47 downto 0);  -- Updated to 48-bit combined data
             buffer_addr : out std_logic_vector(7 downto 0);
             buffer_wr   : out std_logic
@@ -84,6 +86,7 @@ begin
         led_miso    => led_miso,
         led_mosi    => led_mosi,
         led_cs      => led_cs,
+		  led_sclk	  => led_sclk,
         buffer_data => buffer_data_out,  -- Connect to the 48-bit combined data
         buffer_addr => buffer_addr_out,
         buffer_wr   => buffer_wr_out

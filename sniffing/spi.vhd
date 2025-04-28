@@ -13,6 +13,7 @@ entity spi is
         led_miso    : out std_logic;
         led_mosi    : out std_logic;
         led_cs      : out std_logic;
+		  led_sclk	  : out std_logic;
         -- Circular buffer output
         buffer_data : out std_logic_vector(47 downto 0);  -- 16 bits for data (miso, mosi, cs, (13) sclk freq)
         buffer_addr : out std_logic_vector(7 downto 0);
@@ -53,7 +54,7 @@ begin
     process(clk)
     begin
         if rising_edge(clk) then
-            if reset = '0' then
+            if reset = '1' then
                 write_ptr         <= (others => '0');
                 sclk_counter      <= (others => '0');
                 sclk_period       <= (others => '0');
@@ -92,16 +93,20 @@ begin
                     calculated_freq <= (others => '0');
                     freq_hz <= (others => '0');
                 end if;
+										led_miso <= miso;
+				  led_mosi <= mosi;
+				  led_cs   <= cs;
+				  led_sclk <= sclk;
+			
                 
                 if sclk_rising = '1' then
                     miso_reg <= miso;
                     mosi_reg <= mosi;
                     cs_reg   <= cs;
+
                     
                     -- Update LEDs (could be removed in future)
-						  led_miso <= miso;
-                    led_mosi <= mosi;
-                    led_cs   <= cs;
+						  
                     
                     circ_buffer(to_integer(write_ptr)).data      <= miso & mosi & cs & std_logic_vector(freq_hz);
                     circ_buffer(to_integer(write_ptr)).timestamp <= std_logic_vector(timestamp_counter);
