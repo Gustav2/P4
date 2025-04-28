@@ -16,52 +16,69 @@ entity top is
         led_mosi     : out std_logic;
         led_cs       : out std_logic;
 		  led_sclk     : out std_logic;
-        led_pll_lock : out std_logic            -- LED to indicate PLL lock status
+        led_pll_lock : out std_logic;           -- LED to indicate PLL lock status
+        -- transmit
+        uart_txd     : out std_logic
     );
 end top;
 
 architecture Behavioral of top is
     -- Component declarations
     component pll_200mhz
-        Port (
-            inclk0  : in  std_logic;
-            c0      : out std_logic;
-            locked  : out std_logic
-        );
-    end component;
-    
-    component spi
-        Port (
-            clk         : in  std_logic;
-            reset       : in  std_logic;
-            sclk        : in  std_logic;
-            miso        : in  std_logic;
-            mosi        : in  std_logic;
-            cs          : in  std_logic;
-            led_miso    : out std_logic;
-            led_mosi    : out std_logic;
-            led_cs      : out std_logic;
-				led_sclk    : out std_logic;
-            buffer_data : out std_logic_vector(47 downto 0);  -- Updated to 48-bit combined data
-            buffer_addr : out std_logic_vector(7 downto 0);
-            buffer_wr   : out std_logic
-        );
-    end component;
-    
+    Port (
+        inclk0  : in  std_logic;
+        c0      : out std_logic;
+        locked  : out std_logic
+    );
+end component;
+
+component spi
+Port (
+    clk         : in  std_logic;
+    reset       : in  std_logic;
+    sclk        : in  std_logic;
+    miso        : in  std_logic;
+    mosi        : in  std_logic;
+    cs          : in  std_logic;
+    led_miso    : out std_logic;
+    led_mosi    : out std_logic;
+    led_cs      : out std_logic;
+    buffer_data : out std_logic_vector(47 downto 0);  -- Updated to 48-bit combined data
+    buffer_addr : out std_logic_vector(7 downto 0);
+    buffer_wr   : out std_logic
+);
+end component;
+
+component usb_speed_test
+Port (
+    clk         : in  STD_LOGIC;
+    rst_n       : in  STD_LOGIC;
+    uart_txd    : out STD_LOGIC;
+    led_out     : out STD_LOGIC_VECTOR(7 downto 0);
+    data_in     : in  std_logic_vector(7 downto 0);
+    data_valid  : in  std_logic
+);
+end component;
+
     -- Signal declarations
-    signal clk_200mhz   : std_logic;
-    signal pll_locked   : std_logic;
-    signal reset_sync   : std_logic;
-    
+signal clk_200mhz   : std_logic;
+signal pll_locked   : std_logic;
+signal reset_sync   : std_logic;
+
     -- Buffer signals (if needed externally)
-    signal buffer_data_out  : std_logic_vector(47 downto 0);  -- Updated to 48-bit combined data+timestamp
-    signal buffer_addr_out  : std_logic_vector(7 downto 0);
-    signal buffer_wr_out    : std_logic;
-    
+signal buffer_data_out  : std_logic_vector(47 downto 0);  -- Updated to 48-bit combined data+timestamp
+signal buffer_addr_out  : std_logic_vector(7 downto 0);
+signal buffer_wr_out    : std_logic;
+
     -- Optional: Extracted signals for use elsewhere if needed
-    signal data_portion     : std_logic_vector(15 downto 0);  -- Lower 16 bits
-    signal timestamp_portion: std_logic_vector(31 downto 0);  -- Upper 32 bits
-    
+signal data_portion     : std_logic_vector(15 downto 0);  -- Lower 16 bits
+signal timestamp_portion: std_logic_vector(31 downto 0);  -- Upper 32 bits
+
+    -- transmit signal declarations
+signal uart_tx      : std_logic;
+signal led_debug    : std_logic_vector(7 downto 0);
+
+
 begin
     -- Instantiate the PLL
     pll_inst: pll_200mhz
@@ -92,11 +109,25 @@ begin
         buffer_wr   => buffer_wr_out
     );
     
+    usb_tx_inst : usb_speed_test
+    port map (
+        clk         => clk_12mhz,       -- 12 MHz clock
+        rst_n       => reset_n,
+        uart_txd    => uart_tx,
+        led_out     => led_debug,
+        data_in     => data_portion(7 downto 0),  -- Only lower 8 bits for now
+        data_valid  => buffer_wr_out              -- Use SPI buffer write signal
+    );
+
+    
     -- Optional: Extract data and timestamp portions if needed elsewhere in the design
     data_portion      <= buffer_data_out(15 downto 0);       -- Lower 16 bits contain the original data
     timestamp_portion <= buffer_data_out(47 downto 16);      -- Upper 32 bits contain the timestamp
     
     -- Connect PLL lock indicator to LED
     led_pll_lock <= pll_locked;
+    
+    uart_txd <= uart_tx;
+
     
 end Behavioral;

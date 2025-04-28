@@ -19,10 +19,9 @@ void loop() {
     digitalWrite(SPI_SS, ssState); // Set SS pin to the random state
 
     // Format the SPI data for Wireshark
-
-    spiDataOutString = String(spiDataOut, HEX);
-    spiDataInString = String(spiDataIn, HEX);
-    // Convert to uppercase and add leading zeros
+    String spiDataOutString = String(spiDataOut, HEX);
+    String spiDataInString = String(spiDataIn, HEX);
+    // Convert to uppercase
     spiDataOutString.toUpperCase();
     spiDataInString.toUpperCase();
 
