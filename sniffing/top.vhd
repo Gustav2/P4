@@ -73,19 +73,11 @@ architecture Behavioral of top is
     signal buffer_wr_out   : std_logic;
     signal buffer_rd_addr  : std_logic_vector(7 downto 0);
 
-    -- Buffer memory to store SPI data
-    type buffer_mem_type is array (0 to 255) of std_logic_vector(47 downto 0);
-    signal buffer_mem      : buffer_mem_type := (others => (others => '0'));
-    signal buffer_data_read: std_logic_vector(47 downto 0);
-
     -- Debug signals
     signal led_debug       : std_logic_vector(7 downto 0);
-    
-    -- Signal to propagate buffer_wr to transmitter
-    signal transmit_buffer_wr : std_logic := '0';
 
 begin
-    -- Instantiate the PLL (not used for actual clocking but kept for LED indicator)
+    -- Instantiate the PLL (just for LED indicator)
     pll_inst: pll_200mhz
     port map (
         inclk0  => clk_12mhz,
@@ -93,10 +85,10 @@ begin
         locked  => pll_locked
     );
     
-    -- Synchronized reset (active low from board, active high for spi module)
+    -- Create active high reset from active low input
     reset_sync <= not reset_n;
     
-    -- Instantiate the SPI module (using 12MHz clock directly)
+    -- Instantiate the SPI module
     spi_inst: spi
     port map (
         clk         => clk_12mhz,
@@ -114,34 +106,15 @@ begin
         buffer_wr   => buffer_wr_out
     );
     
-    -- Shared buffer implementation with proper handshaking
-    process(clk_12mhz)
-    begin
-        if rising_edge(clk_12mhz) then
-            -- Default values
-            transmit_buffer_wr <= '0';
-            
-            -- Write to buffer when SPI writes
-            if buffer_wr_out = '1' then
-                buffer_mem(to_integer(unsigned(buffer_addr_out))) <= buffer_data_out;
-                -- Trigger a transmit operation
-                transmit_buffer_wr <= '1';
-            end if;
-            
-            -- Read from buffer for USB TX
-            buffer_data_read <= buffer_mem(to_integer(unsigned(buffer_rd_addr)));
-        end if;
-    end process;
-    
-    -- Instantiate the USB transmitter module
+    -- Directly connect the USB transmitter module to SPI module
     usb_tx_inst: usb_speed_test
     port map (
         clk           => clk_12mhz,
         rst_n         => reset_n,
         uart_txd      => uart_txd,
         led_out       => led_debug,
-        buffer_data   => buffer_data_read,
-        buffer_wr     => transmit_buffer_wr,  -- Use the synchronized buffer_wr signal
+        buffer_data   => buffer_data_out,  -- Direct connection to SPI buffer output
+        buffer_wr     => buffer_wr_out,    -- Direct connection to SPI buffer write signal
         buffer_rd_addr=> buffer_rd_addr
     );
     

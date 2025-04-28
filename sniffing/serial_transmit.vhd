@@ -18,8 +18,8 @@ end usb_speed_test;
 architecture Behavioral of usb_speed_test is
     -- Constants
     constant CLK_FREQ       : integer := 12_000_000;  -- 12MHz system clock
-    constant BAUD_RATE      : integer := 11520;  -- 12Mbaud rate
-    constant CYCLES_PER_BIT : integer := CLK_FREQ / BAUD_RATE;  -- 1 cycle per bit
+    constant BAUD_RATE      : integer := 1152000;     -- 1.152 MBaud rate
+    constant CYCLES_PER_BIT : integer := CLK_FREQ / BAUD_RATE;  -- ~10.4 cycles per bit
     
     -- State machine
     type state_type is (IDLE, BUFFER_READ, PREPARE_BYTE, SEND_START, SEND_DATA, SEND_STOP, NEXT_BYTE);
@@ -33,6 +33,8 @@ architecture Behavioral of usb_speed_test is
     signal current_data    : std_logic_vector(47 downto 0) := (others => '0');
     signal current_byte    : std_logic_vector(7 downto 0) := (others => '0');
     signal bytes_sent      : unsigned(31 downto 0) := (others => '0');
+    signal bit_timer       : integer range 0 to CYCLES_PER_BIT-1 := 0;
+    signal transmitting    : std_logic := '0';
     
 begin
     -- Output debug info on LEDs
@@ -54,53 +56,78 @@ begin
             current_data <= (others => '0');
             current_byte <= (others => '0');
             bytes_sent <= (others => '0');
+            bit_timer <= 0;
+            transmitting <= '0';
             
         elsif rising_edge(clk) then
             case state is
                 when IDLE =>
-                    uart_txd <= '1';  -- Idle
-                    if buffer_wr = '1' then
-                        -- Start reading from the buffer
+                    uart_txd <= '1';  -- Idle high
+                    bit_timer <= 0;
+                    
+                    if buffer_wr = '1' and transmitting = '0' then
+                        -- Prepare to read from buffer when there's new data
                         buffer_read_ptr <= buffer_sent_ptr;
                         state <= BUFFER_READ;
+                        transmitting <= '1';
                     end if;
                     
                 when BUFFER_READ =>
-                    -- Latch the data from buffer
+                    -- Directly latch the data from the input buffer, don't rely on memory
                     current_data <= buffer_data;
                     byte_index <= 0;
                     state <= PREPARE_BYTE;
                     
                 when PREPARE_BYTE =>
                     -- Extract the current byte to send
+                    -- Debug: Print the actual bytes in correct order
                     case byte_index is
-                        when 0 => current_byte <= current_data(7 downto 0);
+                        when 0 => current_byte <= current_data(7 downto 0);    -- LSB first
                         when 1 => current_byte <= current_data(15 downto 8);
                         when 2 => current_byte <= current_data(23 downto 16);
                         when 3 => current_byte <= current_data(31 downto 24);
                         when 4 => current_byte <= current_data(39 downto 32);
-                        when 5 => current_byte <= current_data(47 downto 40);
-                        when others => current_byte <= x"FF";  -- Should never happen
+                        when 5 => current_byte <= current_data(47 downto 40);  -- MSB last
+                        when others => current_byte <= x"AA";  -- Changed to 0xAA for debugging
                     end case;
                     state <= SEND_START;
                     
                 when SEND_START =>
                     uart_txd <= '0';  -- Start bit
                     bit_counter <= 0;
-                    state <= SEND_DATA;
+                    
+                    -- Reset bit timer
+                    bit_timer <= bit_timer + 1;
+                    if bit_timer = CYCLES_PER_BIT-1 then
+                        bit_timer <= 0;
+                        state <= SEND_DATA;
+                    end if;
                     
                 when SEND_DATA =>
                     uart_txd <= current_byte(bit_counter);
-                    if bit_counter < 7 then
-                        bit_counter <= bit_counter + 1;
-                    else
-                        state <= SEND_STOP;
+                    
+                    -- Update bit timer
+                    bit_timer <= bit_timer + 1;
+                    if bit_timer = CYCLES_PER_BIT-1 then
+                        bit_timer <= 0;
+                        
+                        if bit_counter < 7 then
+                            bit_counter <= bit_counter + 1;
+                        else
+                            state <= SEND_STOP;
+                        end if;
                     end if;
                     
                 when SEND_STOP =>
                     uart_txd <= '1';  -- Stop bit
-                    bytes_sent <= bytes_sent + 1;
-                    state <= NEXT_BYTE;
+                    
+                    -- Update bit timer
+                    bit_timer <= bit_timer + 1;
+                    if bit_timer = CYCLES_PER_BIT-1 then
+                        bit_timer <= 0;
+                        bytes_sent <= bytes_sent + 1;
+                        state <= NEXT_BYTE;
+                    end if;
                     
                 when NEXT_BYTE =>
                     if byte_index < 5 then
@@ -110,6 +137,7 @@ begin
                     else
                         -- All bytes from this buffer entry sent
                         buffer_sent_ptr <= buffer_sent_ptr + 1;
+                        transmitting <= '0';  -- Ready for next transmission
                         state <= IDLE;
                     end if;
                     
