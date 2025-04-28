@@ -30,59 +30,62 @@ architecture Behavioral of top is
         c0      : out std_logic;
         locked  : out std_logic
     );
-end component;
+    end component;
 
-component spi
-Port (
-    clk         : in  std_logic;
-    reset       : in  std_logic;
-    sclk        : in  std_logic;
-    miso        : in  std_logic;
-    mosi        : in  std_logic;
-    cs          : in  std_logic;
-    led_miso    : out std_logic;
-    led_mosi    : out std_logic;
-    led_cs      : out std_logic;
-    led_sclk    : out std_logic;
-    buffer_data : out std_logic_vector(47 downto 0);
-    buffer_addr : out std_logic_vector(7 downto 0);
-    buffer_wr   : out std_logic
-);
-end component;
+    component spi
+    Port (
+        clk         : in  std_logic;
+        reset       : in  std_logic;
+        sclk        : in  std_logic;
+        miso        : in  std_logic;
+        mosi        : in  std_logic;
+        cs          : in  std_logic;
+        led_miso    : out std_logic;
+        led_mosi    : out std_logic;
+        led_cs      : out std_logic;
+        led_sclk    : out std_logic;
+        buffer_data : out std_logic_vector(47 downto 0);
+        buffer_addr : out std_logic_vector(7 downto 0);
+        buffer_wr   : out std_logic
+    );
+    end component;
 
-component usb_speed_test
-Port (
-    clk           : in  STD_LOGIC;
-    rst_n         : in  STD_LOGIC;
-    uart_txd      : out STD_LOGIC;
-    led_out       : out STD_LOGIC_VECTOR(7 downto 0);
-    buffer_data   : in  std_logic_vector(47 downto 0);
-    buffer_wr     : in  std_logic;
-    buffer_rd_addr: out std_logic_vector(7 downto 0)
-);
-end component;
+    component usb_speed_test
+    Port (
+        clk           : in  STD_LOGIC;
+        rst_n         : in  STD_LOGIC;
+        uart_txd      : out STD_LOGIC;
+        led_out       : out STD_LOGIC_VECTOR(7 downto 0);
+        buffer_data   : in  std_logic_vector(47 downto 0);
+        buffer_wr     : in  std_logic;
+        buffer_rd_addr: out std_logic_vector(7 downto 0)
+    );
+    end component;
 
     -- Signal declarations
-signal clk_200mhz      : std_logic;
-signal pll_locked      : std_logic;
-signal reset_sync      : std_logic;
+    signal clk_200mhz      : std_logic;
+    signal pll_locked      : std_logic;
+    signal reset_sync      : std_logic;
 
     -- Buffer signals
-signal buffer_data_out : std_logic_vector(47 downto 0);
-signal buffer_addr_out : std_logic_vector(7 downto 0);
-signal buffer_wr_out   : std_logic;
-signal buffer_rd_addr  : std_logic_vector(7 downto 0);
+    signal buffer_data_out : std_logic_vector(47 downto 0);
+    signal buffer_addr_out : std_logic_vector(7 downto 0);
+    signal buffer_wr_out   : std_logic;
+    signal buffer_rd_addr  : std_logic_vector(7 downto 0);
 
     -- Buffer memory to store SPI data
-type buffer_mem_type is array (0 to 255) of std_logic_vector(47 downto 0);
-signal buffer_mem      : buffer_mem_type := (others => (others => '0'));
-signal buffer_data_read: std_logic_vector(47 downto 0);
+    type buffer_mem_type is array (0 to 255) of std_logic_vector(47 downto 0);
+    signal buffer_mem      : buffer_mem_type := (others => (others => '0'));
+    signal buffer_data_read: std_logic_vector(47 downto 0);
 
     -- Debug signals
-signal led_debug       : std_logic_vector(7 downto 0);
+    signal led_debug       : std_logic_vector(7 downto 0);
+    
+    -- Signal to propagate buffer_wr to transmitter
+    signal transmit_buffer_wr : std_logic := '0';
 
 begin
-    -- Instantiate the PLL
+    -- Instantiate the PLL (not used for actual clocking but kept for LED indicator)
     pll_inst: pll_200mhz
     port map (
         inclk0  => clk_12mhz,
@@ -91,12 +94,12 @@ begin
     );
     
     -- Synchronized reset (active low from board, active high for spi module)
-    reset_sync <= not (reset_n and pll_locked);
+    reset_sync <= not reset_n;
     
-    -- Instantiate the SPI module
+    -- Instantiate the SPI module (using 12MHz clock directly)
     spi_inst: spi
     port map (
-        clk         => clk_12mhz,    -- Using 200 MHz clock
+        clk         => clk_12mhz,
         reset       => reset_sync,
         sclk        => sclk,
         miso        => miso,
@@ -111,13 +114,18 @@ begin
         buffer_wr   => buffer_wr_out
     );
     
-    -- Shared buffer implementation
+    -- Shared buffer implementation with proper handshaking
     process(clk_12mhz)
     begin
         if rising_edge(clk_12mhz) then
+            -- Default values
+            transmit_buffer_wr <= '0';
+            
             -- Write to buffer when SPI writes
             if buffer_wr_out = '1' then
                 buffer_mem(to_integer(unsigned(buffer_addr_out))) <= buffer_data_out;
+                -- Trigger a transmit operation
+                transmit_buffer_wr <= '1';
             end if;
             
             -- Read from buffer for USB TX
@@ -133,7 +141,7 @@ begin
         uart_txd      => uart_txd,
         led_out       => led_debug,
         buffer_data   => buffer_data_read,
-        buffer_wr     => buffer_wr_out,
+        buffer_wr     => transmit_buffer_wr,  -- Use the synchronized buffer_wr signal
         buffer_rd_addr=> buffer_rd_addr
     );
     
