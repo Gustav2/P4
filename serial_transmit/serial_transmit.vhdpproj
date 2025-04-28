@@ -7,7 +7,7 @@
   </ItemGroup>
   <PropertyGroup>
     <HardwareStartPath>serial_transmit.vhd</HardwareStartPath>
-    <SelectedFpga>CYC5000</SelectedFpga>
+    <SelectedFpga>CYC1000</SelectedFpga>
     <IoVoltage>3.3V</IoVoltage>
   </PropertyGroup>
 </Project>
