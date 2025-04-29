@@ -46,7 +46,7 @@ begin
         wait for 100 ns;
 
         -- Write a test pattern: ASCII "ABCDEF"
-        buffer_data <= x"5F5470000000";  -- 'F','E','D','C','B','A' (LSB first)
+        buffer_data <= x"414243444546";  -- 'A','B','C','D','E','F' (MSB first)
         buffer_wr <= '1';
         wait for CLK_PERIOD;
         buffer_wr <= '0';

@@ -72,13 +72,13 @@ begin
                 when PREPARE_BYTE =>
                     -- Extract the current byte to send based on byte_index
                     case byte_index is
-                        when 0 => current_byte <= x"a1";  -- Most significant byte first
-                        when 1 => current_byte <= x"a2";
-                        when 2 => current_byte <= x"a3";
-                        when 3 => current_byte <= x"a4";
-                        when 4 => current_byte <= x"a5";
-                        when 5 => current_byte <= x"a6";    -- Least significant byte last
-                        when others => current_byte <= x"a7";  -- Safety
+                        when 0 => current_byte <= current_data(47 downto 40);  -- Most significant byte first
+                        when 1 => current_byte <= current_data(39 downto 32);
+                        when 2 => current_byte <= current_data(31 downto 24);
+                        when 3 => current_byte <= current_data(23 downto 16);
+                        when 4 => current_byte <= current_data(15 downto 8);
+                        when 5 => current_byte <= current_data(7 downto 0);    -- Least significant byte last
+                        when others => current_byte <= (others => '0');  -- Safety
                     end case;
                     bit_timer <= 0;
                     state <= SEND_START;

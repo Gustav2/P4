@@ -2,10 +2,10 @@
   <ItemGroup>
     <File Include="pll_200mhz.vhd" />
     <File Include="serial_transmit.vhd" />
+    <File Include="serial_transmit_tb.vhd" />
     <File Include="spi.vhd" />
     <File Include="spi_tb.vhd" />
     <File Include="top.vhd" />
-    <File Include="top_tb.vhd" Passive="true" />
     <File Include="uart_transmitter_tb.vcd" />
   </ItemGroup>
   <PropertyGroup>
