@@ -15,22 +15,13 @@ entity spi is
         led_cs      : out std_logic;
         led_sclk    : out std_logic;
         -- Circular buffer output
-        buffer_data : out std_logic_vector(47 downto 0);  -- 48 bits: 32-bit timestamp + 16-bit data
+        buffer_data : out std_logic_vector(47 downto 0);  -- 48 bits: 16-bit data + 32-bit timestamp 
         buffer_addr : out std_logic_vector(7 downto 0);
         buffer_wr   : out std_logic
     );
 end spi;
 
 architecture Behavioral of spi is
-    -- Buffer entry: 16-bit data + 32-bit timestamp
-    type spi_sample is record
-        data      : std_logic_vector(15 downto 0);
-        timestamp : std_logic_vector(31 downto 0);
-    end record;
-    
-    -- Circular buffer type
-    type buffer_type is array (0 to 255) of spi_sample;
-    signal circ_buffer : buffer_type;
     signal write_ptr : unsigned(7 downto 0) := (others => '0');
     
     -- Edge detection
@@ -48,7 +39,7 @@ architecture Behavioral of spi is
     signal miso_reg, mosi_reg, cs_reg : std_logic;
     
     -- Frequency calculation signals
-    signal system_clk_freq : unsigned(31 downto 0) := to_unsigned(200000000, 32);  -- 200 MHz system clock
+    signal system_clk_freq : unsigned(31 downto 0) := to_unsigned(12000000, 32);  -- 200 MHz system clock
     signal calculated_freq : unsigned(31 downto 0) := (others => '0');
     signal freq_hz        : unsigned(12 downto 0) := (others => '0');
 begin
@@ -107,13 +98,9 @@ begin
                     led_miso <= miso;
                     led_mosi <= mosi;
                     led_cs   <= cs;
-
-                    -- Store data in circular buffer
-                    circ_buffer(to_integer(write_ptr)).data      <= miso & mosi & cs & std_logic_vector(freq_hz);
-                    circ_buffer(to_integer(write_ptr)).timestamp <= std_logic_vector(timestamp_counter);
                     
                     -- Provide data to output ports
-                    buffer_data <= std_logic_vector(timestamp_counter) & miso & mosi & cs & std_logic_vector(freq_hz);
+                    buffer_data <= miso & mosi & cs & std_logic_vector(freq_hz) & std_logic_vector(timestamp_counter);
                     buffer_addr <= std_logic_vector(write_ptr);
                     buffer_wr   <= '1';
                     
