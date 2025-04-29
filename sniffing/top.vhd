@@ -17,7 +17,7 @@ entity top is
         led_cs       : out std_logic;
         led_sclk     : out std_logic;
         led_pll_lock : out std_logic;           -- LED to indicate PLL lock status
-        -- transmit
+        -- UART transmit
         uart_txd     : out std_logic
     );
 end top;
@@ -50,12 +50,11 @@ architecture Behavioral of top is
     );
     end component;
 
-    component usb_speed_test
+    component uart_transmitter
     Port (
         clk           : in  STD_LOGIC;
         rst_n         : in  STD_LOGIC;
         uart_txd      : out STD_LOGIC;
-        led_out       : out STD_LOGIC_VECTOR(7 downto 0);
         buffer_data   : in  std_logic_vector(47 downto 0);
         buffer_wr     : in  std_logic;
         buffer_rd_addr: out std_logic_vector(7 downto 0)
@@ -68,16 +67,13 @@ architecture Behavioral of top is
     signal reset_sync      : std_logic;
 
     -- Buffer signals
-    signal buffer_data_out : std_logic_vector(47 downto 0);
-    signal buffer_addr_out : std_logic_vector(7 downto 0);
-    signal buffer_wr_out   : std_logic;
+    signal buffer_data     : std_logic_vector(47 downto 0);
+    signal buffer_addr     : std_logic_vector(7 downto 0);
+    signal buffer_wr       : std_logic;
     signal buffer_rd_addr  : std_logic_vector(7 downto 0);
 
-    -- Debug signals
-    signal led_debug       : std_logic_vector(7 downto 0);
-
 begin
-    -- Instantiate the PLL (just for LED indicator)
+    -- Instantiate the PLL
     pll_inst: pll_200mhz
     port map (
         inclk0  => clk_12mhz,
@@ -101,20 +97,19 @@ begin
         led_mosi    => led_mosi,
         led_cs      => led_cs,
         led_sclk    => led_sclk,
-        buffer_data => buffer_data_out,
-        buffer_addr => buffer_addr_out,
-        buffer_wr   => buffer_wr_out
+        buffer_data => buffer_data,
+        buffer_addr => buffer_addr,
+        buffer_wr   => buffer_wr
     );
     
-    -- Directly connect the USB transmitter module to SPI module
-    usb_tx_inst: usb_speed_test
+    -- Instantiate the UART transmitter module
+    uart_tx_inst: uart_transmitter
     port map (
         clk           => clk_12mhz,
         rst_n         => reset_n,
         uart_txd      => uart_txd,
-        led_out       => led_debug,
-        buffer_data   => buffer_data_out,  -- Direct connection to SPI buffer output
-        buffer_wr     => buffer_wr_out,    -- Direct connection to SPI buffer write signal
+        buffer_data   => buffer_data,
+        buffer_wr     => buffer_wr,
         buffer_rd_addr=> buffer_rd_addr
     );
     

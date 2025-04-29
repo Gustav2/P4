@@ -5,6 +5,8 @@
     <File Include="spi.vhd" />
     <File Include="spi_tb.vhd" />
     <File Include="top.vhd" />
+    <File Include="top_tb.vhd" Passive="true" />
+    <File Include="uart_transmitter_tb.vcd" />
   </ItemGroup>
   <PropertyGroup>
     <HardwareStartPath>top.vhd</HardwareStartPath>

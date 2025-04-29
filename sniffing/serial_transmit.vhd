@@ -2,20 +2,19 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
-entity usb_speed_test is
+entity uart_transmitter is
     Port (
         clk           : in  STD_LOGIC;                     -- 12MHz clock input
         rst_n         : in  STD_LOGIC;                     -- Reset signal (active low)
         uart_txd      : out STD_LOGIC;                     -- UART TX data
-        led_out       : out STD_LOGIC_VECTOR(7 downto 0);  -- LEDs for debugging
         -- Buffer interface
-        buffer_data   : in  std_logic_vector(47 downto 0); -- Full 48-bit data from buffer
+        buffer_data   : in  std_logic_vector(47 downto 0); -- 48-bit data from buffer
         buffer_wr     : in  std_logic;                     -- Buffer write signal
         buffer_rd_addr: out std_logic_vector(7 downto 0)   -- Read address to buffer
     );
-end usb_speed_test;
+end uart_transmitter;
 
-architecture Behavioral of usb_speed_test is
+architecture Behavioral of uart_transmitter is
     -- Constants
     constant CLK_FREQ       : integer := 12_000_000;  -- 12MHz system clock
     constant BAUD_RATE      : integer := 115200;      -- Standard 115200 baud rate
@@ -37,9 +36,6 @@ architecture Behavioral of usb_speed_test is
     signal transmitting    : std_logic := '0';
     
 begin
-    -- Output debug info on LEDs
-    led_out <= std_logic_vector(bytes_sent(7 downto 0));
-    
     -- Connect buffer read address
     buffer_rd_addr <= std_logic_vector(buffer_read_ptr);
     
@@ -72,21 +68,21 @@ begin
                         transmitting <= '1';
                         state <= PREPARE_BYTE;
                     end if;
-                
+                    
                 when PREPARE_BYTE =>
-                    -- Extract the current byte to send according to the original code
+                    -- Extract the current byte to send based on byte_index
                     case byte_index is
-                        when 0 => current_byte <= current_data(7 downto 0);
-                        when 1 => current_byte <= current_data(15 downto 8);
-                        when 2 => current_byte <= current_data(23 downto 16);
-                        when 3 => current_byte <= current_data(31 downto 24);
-                        when 4 => current_byte <= current_data(39 downto 32);
-                        when 5 => current_byte <= current_data(47 downto 40);
-                        when others => current_byte <= x"FF";  -- Should never happen
+                        when 0 => current_byte <= x"a1";  -- Most significant byte first
+                        when 1 => current_byte <= x"a2";
+                        when 2 => current_byte <= x"a3";
+                        when 3 => current_byte <= x"a4";
+                        when 4 => current_byte <= x"a5";
+                        when 5 => current_byte <= x"a6";    -- Least significant byte last
+                        when others => current_byte <= x"a7";  -- Safety
                     end case;
                     bit_timer <= 0;
                     state <= SEND_START;
-                
+                    
                 when SEND_START =>
                     uart_txd <= '0';  -- Start bit
                     bit_counter <= 0;
@@ -99,7 +95,7 @@ begin
                     else
                         bit_timer <= bit_timer + 1;
                     end if;
-                
+                    
                 when SEND_DATA =>
                     uart_txd <= current_byte(bit_counter);
                     
@@ -115,7 +111,7 @@ begin
                     else
                         bit_timer <= bit_timer + 1;
                     end if;
-                
+                    
                 when SEND_STOP =>
                     uart_txd <= '1';  -- Stop bit
                     
@@ -127,7 +123,7 @@ begin
                     else
                         bit_timer <= bit_timer + 1;
                     end if;
-                
+                    
                 when NEXT_BYTE =>
                     if byte_index < 5 then
                         -- Move to next byte in current data
