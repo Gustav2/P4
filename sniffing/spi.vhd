@@ -14,7 +14,7 @@ entity spi is
         led_mosi    : out std_logic;
         led_cs      : out std_logic;
         led_sclk    : out std_logic;
-        -- Circular buffer output
+		  
         buffer_data : out std_logic_vector(47 downto 0);  -- 48 bits: 16-bit data + 32-bit timestamp 
         buffer_addr : out std_logic_vector(7 downto 0);
         buffer_wr   : out std_logic
@@ -39,7 +39,7 @@ architecture Behavioral of spi is
     signal miso_reg, mosi_reg, cs_reg : std_logic;
     
     -- Frequency calculation signals
-    signal system_clk_freq : unsigned(31 downto 0) := to_unsigned(12000000, 32);  -- 200 MHz system clock
+    signal system_clk_freq : unsigned(31 downto 0) := to_unsigned(12000000, 32);  -- 12 MHz system clock
     signal calculated_freq : unsigned(31 downto 0) := (others => '0');
     signal freq_hz        : unsigned(12 downto 0) := (others => '0');
 begin
