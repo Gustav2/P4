@@ -43,6 +43,7 @@ mem_init/
 ## Folder for testing
 test/
 build/
+local_testing/
 
 ## VSCode config ignore (maybe not ignore in the future?? perchance)
 .vscode/
