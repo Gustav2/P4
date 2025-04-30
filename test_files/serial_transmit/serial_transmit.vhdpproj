@@ -1,0 +1,19 @@
+﻿<Project>
+  <ItemGroup>
+    <File Include="1s_usb_speed_test_tb.vcd" />
+    <File Include="serial_transmit.vhd" />
+    <File Include="serial_transmit_Sim.ghdp" />
+    <File Include="uart_simple.vhd" Passive="true" />
+    <File Include="uart_simple_tx_tb.vhd" Passive="true" />
+    <File Include="uart_tx.vhd" Passive="true" />
+    <File Include="uart_tx_Sim.ghdp" />
+    <File Include="uart_tx_tb.vcd" />
+    <File Include="uart_tx_top.vhd" Passive="true" />
+    <File Include="usb_speed_test_tb.vcd" />
+  </ItemGroup>
+  <PropertyGroup>
+    <HardwareStartPath>serial_transmit.vhd</HardwareStartPath>
+    <SelectedFpga>CYC5000</SelectedFpga>
+    <IoVoltage>3.3V</IoVoltage>
+  </PropertyGroup>
+</Project>
