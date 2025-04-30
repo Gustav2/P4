@@ -47,16 +47,16 @@ function proto_spi.dissector(buffer, pinfo, tree)
   payload_tree:add(field_cs, buffer(0, 1), bit.band(first_byte, 0x04)) -- bit 2
   
   -- Extract bits 3-15 (sclk_freq)
-  local sclk_freq = bit.rshift(first_byte, 3) -- Get bits 3-7 of the first byte
-  sclk_freq = bit.bor(sclk_freq, bit.lshift(second_byte, 5)) -- Combine with bits 8-15
+  local sclk_freq = bit.band(first_byte, 0xF8) -- Get bits 3-7 of the first byte
+  sclk_freq = bit.bor(sclk_freq, bit.lshift(second_byte, 3)) -- Combine with bits 8-15
   payload_tree:add(field_sclk, buffer(0, 2), sclk_freq)
 
   -- Extract bits 16-47 (timestamp)
   local timestamp = bit.bor(
-    bit.lshift(sixth_byte, 24),
-    bit.lshift(fifth_byte, 16),
+    third_byte,
     bit.lshift(fourth_byte, 8),
-    third_byte
+    bit.lshift(fifth_byte, 16),
+    bit.lshift(sixth_byte, 24)
   )
   payload_tree:add(field_timestamp, buffer(2, 4), timestamp)
 
