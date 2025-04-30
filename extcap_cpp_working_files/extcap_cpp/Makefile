@@ -2,17 +2,21 @@
 
 CXX = g++
 CXXFLAGS = -O2 -Wall -std=c++17
-LDFLAGS = 
+LDFLAGS =
 TARGET = build/extcap_uart
 SRC = src/main.cpp
 
-# If you get linker errors about filesystem, uncomment the line below:
-# LDFLAGS += -lstdc++fs
+.PHONY: all clean install
 
 all: $(TARGET)
 
 $(TARGET): $(SRC)
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
+install: $(TARGET)
+	sudo cp $(TARGET) /usr/lib/x86_64-linux-gnu/wireshark/extcap/
+	sudo chmod +x /usr/lib/x86_64-linux-gnu/wireshark/extcap/$(notdir $(TARGET))
 
 clean:
 	rm -f $(TARGET)
