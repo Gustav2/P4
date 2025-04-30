@@ -17,7 +17,7 @@ end uart_transmitter;
 architecture Behavioral of uart_transmitter is
     -- Constants
     constant CLK_FREQ       : integer := 12_000_000;  -- 12MHz system clock
-    constant BAUD_RATE      : integer := 115200;      -- Standard 115200 baud rate
+    constant BAUD_RATE      : integer := 12_000_000;      -- Standard 115200 baud rate
     constant CYCLES_PER_BIT : integer := CLK_FREQ / BAUD_RATE;  -- ~104 cycles per bit
     
     -- State machine

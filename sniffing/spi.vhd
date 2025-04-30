@@ -14,7 +14,6 @@ entity spi is
         led_mosi    : out std_logic;
         led_cs      : out std_logic;
         led_sclk    : out std_logic;
-		  
         buffer_data : out std_logic_vector(47 downto 0);  -- 48 bits: 16-bit data + 32-bit timestamp 
         buffer_addr : out std_logic_vector(7 downto 0);
         buffer_wr   : out std_logic
