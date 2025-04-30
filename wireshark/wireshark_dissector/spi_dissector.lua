@@ -42,9 +42,9 @@ function proto_spi.dissector(buffer, pinfo, tree)
   local sixth_byte = buffer(5, 1):uint()
 
   -- The first 3 bits (miso, mosi and cs) in the first byte
-  payload_tree:add(field_miso, buffer(0, 1), bit.band(first_byte, 0x01)) -- bit 0
-  payload_tree:add(field_mosi, buffer(0, 1), bit.band(first_byte, 0x02)) -- bit 1
-  payload_tree:add(field_cs, buffer(0, 1), bit.band(first_byte, 0x04)) -- bit 2
+  payload_tree:add(field_miso, buffer(0, 1), bit.band(first_byte, 0x80) ~= 0) -- bit 7
+  payload_tree:add(field_mosi, buffer(0, 1), bit.band(first_byte, 0x40) ~= 0) -- bit 6
+  payload_tree:add(field_cs, buffer(0, 1), bit.band(first_byte, 0x20) ~= 0) -- bit 5
   
   -- Extract bits 3-15 (sclk_freq)
   local sclk_freq = bit.band(first_byte, 0xF8) -- Get bits 3-7 of the first byte
