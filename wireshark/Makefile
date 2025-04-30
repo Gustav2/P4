@@ -17,7 +17,7 @@ SRC_DISSECTOR = wireshark_dissector/spi_dissector.lua
 EXTCAP_SRC = wireshark_extcap/src/main.cpp
 EXTCAP_TARGET = wireshark_extcap/build/extcap_uart
 
-all: confirm_paths build_extcap install_extcap install_lua install_config
+all: confirm_paths build_extcap install_extcap install_lua install_config clean
 	@echo "All components installed succesfully!"
 	@echo "Wireshark directory: $(WIRESHARK_PATH)"
 	@echo "Lua dissector path: $(WIRESHARK_PATH)/plugins/spi_dissector.lua"
@@ -52,4 +52,9 @@ confirm_paths:
 	@echo "Extcap interface path: $(WIRESHARK_PATH)/extcap/extcap_uart"
 	@read -p "Are these paths correct? (y/n): " confirm && [ "$$confirm" = "y" ] || (echo "Aborted by user." && exit 1)
 
-.PHONY: all install_lua install_config install_extcap build_extcap comfirm_paths
+clean:
+	@echo "Cleaning up build files..."
+	@rm -r wireshark_extcap/build
+	@echo "Build files cleaned up."
+
+.PHONY: all install_lua install_config install_extcap build_extcap comfirm_paths clean
