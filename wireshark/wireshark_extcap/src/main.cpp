@@ -11,10 +11,11 @@
 #include <string>
 #include <filesystem>
 #include <regex>
-#include <netinet/in.h> // For htonl()
+#include <netinet/in.h> 
 
 namespace fs = std::filesystem;
 
+// Function to list available UART devices
 std::vector<std::string> list_uart_devices() {
     std::vector<std::string> devices;
     const std::regex ttyusb_regex("^ttyUSB[0-9]+$");
@@ -29,6 +30,7 @@ std::vector<std::string> list_uart_devices() {
     return devices;
 }
 
+// Function to configure the serial port
 bool configure_serial_port(int fd, int baudrate) {
     struct termios2 tio;
     if (ioctl(fd, TCGETS2, &tio) < 0) {
@@ -56,6 +58,7 @@ bool configure_serial_port(int fd, int baudrate) {
     return true;
 }
 
+// PCAP Global Header
 struct PcapGlobalHeader {
     uint32_t magic_number = 0xa1b2c3d4;
     uint16_t version_major = 2;
@@ -71,6 +74,7 @@ void write_pcap_global_header(int fd) {
     write(fd, &header, sizeof(header));
 }
 
+// PCAP Record Header, used for each packet
 struct pcaprec_hdr_t {
     uint32_t ts_sec;         // timestamp seconds
     uint32_t ts_usec;        // timestamp microseconds
@@ -78,10 +82,11 @@ struct pcaprec_hdr_t {
     uint32_t orig_len;       // actual length of packet
 };
 
-// CHANGED: Added baudrate parameter to this function
+// Function to run the extcap capture
 int run_extcap_capture(const std::string& fifo_path, const std::string& device_path, int baudrate) {
     std::cerr << "[DEBUG] Entered run_extcap_capture()\n";
 
+    // Create the FIFO if it doesn't exist
     int fd_fifo = open(fifo_path.c_str(), O_WRONLY);
     if (fd_fifo < 0) {
         std::cerr << "[ERROR] Could not open FIFO: " << strerror(errno) << "\n";
@@ -91,6 +96,7 @@ int run_extcap_capture(const std::string& fifo_path, const std::string& device_p
     std::cerr << "[DEBUG] Writing PCAP header...\n";
     write_pcap_global_header(fd_fifo);
 
+    // Open the UART device
     int fd_uart = open(device_path.c_str(), O_RDWR | O_NOCTTY);
     if (fd_uart < 0) {
         std::cerr << "[ERROR] Could not open UART: " << strerror(errno) << "\n";
@@ -98,7 +104,7 @@ int run_extcap_capture(const std::string& fifo_path, const std::string& device_p
         return 1;
     }
 
-    // CHANGED: Use provided baudrate
+    // Use provided baudrate
     if (!configure_serial_port(fd_uart, baudrate)) {
         close(fd_uart);
         close(fd_fifo);
@@ -108,6 +114,7 @@ int run_extcap_capture(const std::string& fifo_path, const std::string& device_p
     const size_t BUFFER_SIZE = 6;
     uint8_t buffer[BUFFER_SIZE];
 
+    // Set the UART to non-blocking mode
     while (true) {
         ssize_t bytes_read = read(fd_uart, buffer, BUFFER_SIZE);
         if (bytes_read > 0) {
@@ -136,6 +143,7 @@ int run_extcap_capture(const std::string& fifo_path, const std::string& device_p
     return 0;
 }
 
+// Main function to handle arguments and run the extcap
 int main(int argc, char* argv[]) {
     std::cerr << "Arguments passed to extcap_uart:\n";
     for (int i = 0; i < argc; ++i) {
@@ -169,13 +177,14 @@ int main(int argc, char* argv[]) {
                     return 0;
                 }
             } else if (arg == "--extcap-config") {
+                // UART device selection
                 std::cout << "arg {number=0}{call=--serial-device}{display=Serial Device}"
                              "{tooltip=Select the UART device}{type=selector}{required=true}{group=UART}\n";
                 for (const auto& dev : list_uart_devices()) {
                     std::cout << "value {arg=0}{value=" << dev << "}{display=" << dev << "}\n";
                 }
 
-                // ADDED: Baudrate field
+                // Baudrate selection
                 std::cout << "arg {number=1}{call=--baudrate}{display=Baud Rate}"
                              "{tooltip=Set the UART baud rate (e.g. 12000000)}"
                              "{type=string}{default=12000000}{group=UART}\n";
@@ -189,29 +198,30 @@ int main(int argc, char* argv[]) {
 
     std::string fifo_path;
     std::string selected_device;
-    int baudrate = 12000000;  // ADDED: default baudrate
+    int baudrate = 12000000;  // Default baudrate
 
-    // CHANGED: Now also parse --baudrate
+    // Second pass: parse the arguments
     for (int i = 1; i < argc; ++i) {
         std::string arg(argv[i]);
         if (arg == "--fifo" && i + 1 < argc) {
             fifo_path = argv[++i];
         } else if (arg == "--serial-device" && i + 1 < argc) {
             selected_device = argv[++i];
-        } else if (arg == "--baudrate" && i + 1 < argc) {  // ADDED
+        } else if (arg == "--baudrate" && i + 1 < argc) {
             baudrate = std::stoi(argv[++i]);
         }
     }
 
+    // Check if we are in capture mode
     if (capture_mode) {
         std::cerr << "Running capture mode:\n";
         std::cerr << "  Interface: " << interface_name << "\n";
         std::cerr << "  FIFO: " << fifo_path << "\n";
         std::cerr << "  UART: " << selected_device << "\n";
-        std::cerr << "  Baudrate: " << baudrate << "\n";  // ADDED
+        std::cerr << "  Baudrate: " << baudrate << "\n";
 
         if (!fifo_path.empty() && !selected_device.empty()) {
-            return run_extcap_capture(fifo_path, selected_device, baudrate);  // CHANGED
+            return run_extcap_capture(fifo_path, selected_device, baudrate);
         } else {
             std::cerr << "Missing fifo or serial-device!\n";
             return 1;

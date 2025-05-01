@@ -230,7 +230,7 @@ def pcap_fake_header():
 # Calculates and returns the IP checksum based on the given IP Header
 def ip_checksum(iph):
     #split into bytes
-    words = splitN(''.join(iph.split()), 4)  # TODO splitN() func undefined, this code will fail
+    words = split(''.join(iph.split()), 4)  # TODO splitN() func undefined, this code will fail
     csum = 0
     for word in words:
         csum += int(word, base=16)
