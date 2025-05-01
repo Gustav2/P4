@@ -1,8 +1,12 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
+use work.constants.all;
 
 entity spi is
+    generic (
+        USE_PLL_CONSTANT   : boolean := USE_PLL_CONSTANT
+    );
     Port (
         clk         : in  std_logic;
         reset       : in  std_logic;
@@ -14,13 +18,24 @@ entity spi is
         led_mosi    : out std_logic;
         led_cs      : out std_logic;
         led_sclk    : out std_logic;
-        buffer_data : out std_logic_vector(47 downto 0);  -- 48 bits: 16-bit data + 32-bit timestamp 
+        buffer_data : out std_logic_vector(47 downto 0);  -- 48 bits: 16-bit data + 32-bit timestamp
         buffer_addr : out std_logic_vector(7 downto 0);
         buffer_wr   : out std_logic
     );
 end spi;
 
 architecture Behavioral of spi is
+    -- Function to select clock frequency based on PLL constant
+    function get_clk_freq(use_pll : boolean) return integer is
+    begin
+        if use_pll then
+            return 200_000_000;
+        else
+            return 12_000_000;
+        end if;
+    end function;
+    
+    
     signal write_ptr : unsigned(7 downto 0) := (others => '0');
     
     -- Edge detection
@@ -38,7 +53,7 @@ architecture Behavioral of spi is
     signal miso_reg, mosi_reg, cs_reg : std_logic;
     
     -- Frequency calculation signals
-    signal system_clk_freq : unsigned(31 downto 0) := to_unsigned(12000000, 32);  -- 12 MHz system clock
+    signal system_clk_freq : unsigned(31 downto 0) := to_unsigned(get_clk_freq(USE_PLL_CONSTANT), 32);  -- 12 MHz system clock
     signal calculated_freq : unsigned(31 downto 0) := (others => '0');
     signal freq_hz        : unsigned(12 downto 0) := (others => '0');
 begin

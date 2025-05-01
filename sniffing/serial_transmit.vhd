@@ -1,11 +1,16 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
+use work.constants.all;
 
 entity uart_transmitter is
+    generic (
+        USE_PLL_CONSTANT   : boolean := USE_PLL_CONSTANT;
+        BAUD_RATE_CONSTANT : integer := BAUD_RATE_CONSTANT
+    );
     Port (
         clk           : in  STD_LOGIC;                     -- 12MHz clock input
-        rst_n         : in  STD_LOGIC;                     -- Reset signal (active low)
+        reset         : in  STD_LOGIC;                     -- Reset signal (active low)
         uart_txd      : out STD_LOGIC;                     -- UART TX data
         -- Buffer interface
         buffer_data   : in  std_logic_vector(47 downto 0); -- 48-bit data from buffer
@@ -15,9 +20,19 @@ entity uart_transmitter is
 end uart_transmitter;
 
 architecture Behavioral of uart_transmitter is
+    -- Function to select clock frequency based on PLL constant
+    function get_clk_freq(use_pll : boolean) return integer is
+    begin
+        if use_pll then
+            return 200_000_000;
+        else
+            return 12_000_000;
+        end if;
+    end function;
+    
     -- Constants
-    constant CLK_FREQ       : integer := 12_000_000;  -- 12MHz system clock
-    constant BAUD_RATE      : integer := 12_000_000;      -- Standard 115200 baud rate
+    constant CLK_FREQ       : integer := get_clk_freq(USE_PLL_CONSTANT);
+    constant BAUD_RATE      : integer := BAUD_RATE_CONSTANT;      -- Standard 115200 baud rate
     constant CYCLES_PER_BIT : integer := CLK_FREQ / BAUD_RATE;  -- ~104 cycles per bit
     
     -- State machine
@@ -39,9 +54,9 @@ begin
     -- Connect buffer read address
     buffer_rd_addr <= std_logic_vector(buffer_read_ptr);
     
-    process(clk, rst_n)
+    process(clk, reset)
     begin
-        if rst_n = '0' then
+        if reset = '1' then
             -- Reset all signals
             state <= IDLE;
             uart_txd <= '1';  -- Idle high

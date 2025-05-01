@@ -57,6 +57,7 @@ set_global_assignment -name FAMILY "Cyclone 10 LP"
 set_global_assignment -name DEVICE 10CL025YU256C8G
 set_global_assignment -name TOP_LEVEL_ENTITY top
 set_global_assignment -name NUM_PARALLEL_PROCESSORS 8
+set_global_assignment -name VHDL_FILE constants.vhd
 set_global_assignment -name VHDL_FILE pll_200mhz.vhd
 set_global_assignment -name VHDL_FILE serial_transmit.vhd
 set_global_assignment -name VHDL_FILE serial_transmit_tb.vhd
@@ -71,7 +72,7 @@ set_location_assignment PIN_T2 -to led_sclk
 set_location_assignment PIN_M6 -to led_pll_lock
 set_location_assignment PIN_J1 -to sclk
 set_location_assignment PIN_T7 -to uart_txd
-set_location_assignment PIN_N6 -to reset_n
 set_location_assignment PIN_N1 -to mosi
 set_location_assignment PIN_N2 -to miso
 set_location_assignment PIN_P2 -to cs
+set_location_assignment PIN_N6 -to reset

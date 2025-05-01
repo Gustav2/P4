@@ -7,7 +7,7 @@ end uart_transmitter_tb;
 
 architecture Behavioral of uart_transmitter_tb is
     signal clk           : std_logic := '0';
-    signal rst_n         : std_logic := '0';
+    signal reset         : std_logic := '0';
     signal uart_txd      : std_logic;
     signal buffer_data   : std_logic_vector(47 downto 0) := (others => '0');
     signal buffer_wr     : std_logic := '0';
@@ -20,7 +20,7 @@ begin
     uut: entity work.uart_transmitter
     port map (
         clk           => clk,
-        rst_n         => rst_n,
+        reset         => reset,
         uart_txd      => uart_txd,
         buffer_data   => buffer_data,
         buffer_wr     => buffer_wr,
@@ -40,9 +40,9 @@ begin
     stim_proc : process
     begin
         -- Reset
-        rst_n <= '0';
+        reset <= '0';
         wait for 100 ns;
-        rst_n <= '1';
+        reset <= '1';
         wait for 100 ns;
 
         -- Write a test pattern: ASCII "ABCDEF"
