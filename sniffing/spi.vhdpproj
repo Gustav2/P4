@@ -3,8 +3,10 @@
     <File Include="constants.vhd" />
     <File Include="pll_200mhz.vhd" />
     <File Include="serial_transmit.vhd" />
+    <File Include="serial_transmit_old.vhd" />
     <File Include="serial_transmit_tb.vhd" />
     <File Include="spi.vhd" />
+    <File Include="spi_tb.vcd" />
     <File Include="spi_tb.vhd" />
     <File Include="top.vhd" />
     <File Include="uart_transmitter_tb.vcd" />

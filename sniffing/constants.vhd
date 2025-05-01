@@ -6,6 +6,6 @@ package constants is
     constant BAUD_RATE_CONSTANT : integer := 12_000_000;
     
     -- Clock constants
-    constant USE_PLL_CONSTANT   : boolean := true;
+    constant USE_PLL_CONSTANT   : boolean := false;
 
 end package constants;
