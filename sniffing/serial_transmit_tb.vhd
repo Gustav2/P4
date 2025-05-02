@@ -22,7 +22,7 @@ architecture sim of uart_transmitter_tb is
     function get_clk_period(use_pll : boolean) return time is
     begin
         if use_pll then
-            return 5 ns;  -- 200MHz with PLL
+            return 5 ns;        -- 200MHz with PLL
         else
             return 83.333 ns;   -- 12MHz base clock
         end if;

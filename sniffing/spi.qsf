@@ -61,7 +61,6 @@ set_global_assignment -name VHDL_FILE constants.vhd
 set_global_assignment -name VHDL_FILE pll_200mhz.vhd
 set_global_assignment -name VHDL_FILE serial_transmit.vhd
 set_global_assignment -name VHDL_FILE serial_transmit_old.vhd
-set_global_assignment -name VHDL_FILE serial_transmit_tb.vhd
 set_global_assignment -name VHDL_FILE spi.vhd
 set_global_assignment -name VHDL_FILE spi_tb.vhd
 set_global_assignment -name VHDL_FILE top.vhd
