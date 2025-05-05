@@ -22,7 +22,10 @@ entity circular_buffer is
         -- Status signals
         empty       : out std_logic;
         full        : out std_logic;
-        data_count  : out std_logic_vector(ADDR_WIDTH downto 0)  -- Number of entries in buffer
+        data_count  : out std_logic_vector(ADDR_WIDTH downto 0);  -- Number of entries in buffer
+        
+        -- Read valid signal (to sync with UART)
+        rd_valid    : out std_logic
     );
 end entity circular_buffer;
 
@@ -40,12 +43,14 @@ architecture Behavioral of circular_buffer is
     signal count       : unsigned(ADDR_WIDTH downto 0) := (others => '0');
     signal empty_i     : std_logic := '1';
     signal full_i      : std_logic := '0';
+    signal rd_valid_i  : std_logic := '0';
     
 begin
     -- Connect internal status signals to outputs
     empty <= empty_i;
     full <= full_i;
     data_count <= std_logic_vector(count);
+    rd_valid <= rd_valid_i;
     
     -- Buffer process
     process(clk)
@@ -58,6 +63,7 @@ begin
                 count <= (others => '0');
                 empty_i <= '1';
                 full_i <= '0';
+                rd_valid_i <= '0';
             else
                 -- Handle read and write operations
                 
@@ -76,16 +82,13 @@ begin
                     else
                         -- Only write, count increases
                         count <= count + 1;
-                        empty_i <= '0';
-                        if count = BUFFER_DEPTH-1 then
-                            full_i <= '1';
-                        end if;
                     end if;
                 end if;
                 
                 -- Read operation
                 if rd_en = '1' and empty_i = '0' then
                     -- Data already available on rd_data
+                    rd_valid_i <= '1';
                     
                     -- Update read pointer
                     rd_ptr <= rd_ptr + 1;
@@ -94,11 +97,22 @@ begin
                     if not (wr_en = '1' and full_i = '0') then
                         -- Only read, count decreases
                         count <= count - 1;
-                        full_i <= '0';
-                        if count = 1 then
-                            empty_i <= '1';
-                        end if;
                     end if;
+                else
+                    rd_valid_i <= '0';
+                end if;
+
+                -- Update empty and full flags inside process
+                if count = 0 then
+                    empty_i <= '1';
+                else
+                    empty_i <= '0';
+                end if;
+
+                if count = BUFFER_DEPTH then
+                    full_i <= '1';
+                else
+                    full_i <= '0';
                 end if;
             end if;
         end if;
