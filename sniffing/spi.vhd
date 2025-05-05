@@ -18,13 +18,14 @@ entity spi is
         led_mosi    : out std_logic;
         led_cs      : out std_logic;
         led_sclk    : out std_logic;
-
+        
         -- Modified buffer interface for circular buffer
         buffer_data : out std_logic_vector(47 downto 0);
         buffer_wr   : out std_logic;
         buffer_full : in  std_logic    -- New signal to indicate if buffer is full
     );
 end spi;
+
 architecture Behavioral of spi is
     -- Function to select clock frequency based on PLL constant
     function get_clk_freq(use_pll : boolean) return integer is
@@ -35,120 +36,93 @@ architecture Behavioral of spi is
             return 12_000_000;
         end if;
     end function;
-
+    
     -- Edge detection
-    signal sclk_prev    : std_logic := '0';
-    signal sclk_rising  : std_logic := '0';
-    signal sclk_falling : std_logic := '0'; -- ADDED for falling edge detection
-
+    signal sclk_prev   : std_logic := '0';
+    signal sclk_rising : std_logic := '0';
+    
     -- Frequency measurement
     signal sclk_counter : unsigned(31 downto 0) := (others => '0');
     signal sclk_period  : unsigned(31 downto 0) := (others => '0');
-
+    
     -- Timestamp counter
     signal timestamp_counter : unsigned(31 downto 0) := (others => '0');
-
-    -- Sampled SPI values (registers might not be strictly needed if sampling directly)
-    -- signal miso_reg, mosi_reg, cs_reg : std_logic;
-
+    
+    -- Sampled SPI values
+    signal miso_reg, mosi_reg, cs_reg : std_logic;
+    
     -- Frequency calculation signals
     signal system_clk_freq : unsigned(31 downto 0) := to_unsigned(get_clk_freq(USE_PLL_CONSTANT), 32);
     signal calculated_freq : unsigned(31 downto 0) := (others => '0');
-    signal freq_hz         : unsigned(12 downto 0) := (others => '0'); -- 13 bits as per buffer_data structure
-
+    signal freq_hz        : unsigned(12 downto 0) := (others => '0');
+    
     -- Buffer write control
     signal buffer_wr_internal : std_logic := '0';
-
+    
 begin
     -- Connect internal write signal to output through buffer full check
     buffer_wr <= buffer_wr_internal and (not buffer_full);
-
+    
     process(clk)
     begin
         if rising_edge(clk) then
             if reset = '1' then
-                sclk_counter       <= (others => '0');
-                sclk_period        <= (others => '0');
-                timestamp_counter  <= (others => '0');
-                sclk_prev          <= '0';
+                sclk_counter      <= (others => '0');
+                sclk_period       <= (others => '0');
+                timestamp_counter <= (others => '0');
+                sclk_prev         <= '0';
                 buffer_wr_internal <= '0';
-                sclk_rising        <= '0';
-                sclk_falling       <= '0'; -- Reset added signal
-                calculated_freq    <= (others => '0');
-                freq_hz            <= (others => '0');
-                -- miso_reg        <= '0'; -- Reset if needed
-                -- mosi_reg        <= '0';
-                -- cs_reg          <= '0';
+                sclk_rising       <= '0';
+                calculated_freq   <= (others => '0');
+                freq_hz           <= (others => '0');
             else
                 -- Timestamp increment
                 timestamp_counter <= timestamp_counter + 1;
-
+                
                 -- Default state
                 buffer_wr_internal <= '0';
-                sclk_rising  <= '0';
-                sclk_falling <= '0'; -- Default added signal
-
+                sclk_rising <= '0';
+                
                 -- Edge detection
-                if sclk = '1' and sclk_prev = '0' then -- RISING EDGE
+                if sclk = '1' and sclk_prev = '0' then
                     sclk_rising <= '1';
-                    sclk_period <= sclk_counter; -- Capture period on rising edge (full cycle)
+                    sclk_period  <= sclk_counter;
                     sclk_counter <= (others => '0');
-                elsif sclk = '0' and sclk_prev = '1' then -- FALLING EDGE - ADDED
-                    sclk_falling <= '1';
-                    -- Keep counting for period measurement based on rising edge
-                    sclk_counter <= sclk_counter + 1;
                 else
-                     -- Continue counting between edges
                     sclk_counter <= sclk_counter + 1;
                 end if;
                 sclk_prev <= sclk;
-
-                -- Calculate actual frequency in Hz (based on rising edge period)
-                -- Ensure calculation runs even if sampling is on falling edge
-                if sclk_rising = '1' then -- Calculate freq when period is updated
-                    if sclk_period > 0 then -- Basic check to avoid division by zero
-                       -- Prevent division if period is larger than system clock freq (should not happen for valid SCLK)
-                       if sclk_period < system_clk_freq then
-                          calculated_freq <= system_clk_freq / sclk_period;
-                          -- Convert and store in 13-bit value. Make sure resize logic is appropriate.
-                          -- If calculated_freq can exceed 2^13, this resize truncates MSBs.
-                          -- Example: 200MHz / 100 (2MHz SCLK period) = 2,000,000.
-                          -- Example: 12MHz / 6 (2MHz SCLK period) = 2,000,000.
-                          -- Need to decide how to represent freq. If it's kHz, divide by 1000.
-                          -- Assuming freq_hz directly stores Hz truncated/resized:
-                          if calculated_freq >= 2**13 then -- Check if frequency exceeds 13 bits (8191 Hz)
-                             freq_hz <= (others => '1'); -- Max value indicate overflow or high freq
-                          else
-                             freq_hz <= resize(calculated_freq, 13);
-                          end if;
-                       else
-                          calculated_freq <= (others => '0');
-                          freq_hz <= (others => '0');
-                       end if;
-                    else
-                        calculated_freq <= (others => '0');
-                        freq_hz <= (others => '0');
-                    end if;
+                
+                -- Calculate actual frequency in Hz
+                if sclk_period > 0 and sclk_period < system_clk_freq then
+                    calculated_freq <= system_clk_freq / sclk_period;
+                    -- Convert and store in 13-bit value
+                    freq_hz <= resize(calculated_freq(31 downto 17), 13);
+                else
+                    calculated_freq <= (others => '0');
+                    freq_hz <= (others => '0');
                 end if;
-
-
-                -- Update status LEDs (can reflect raw signals or sampled)
-                led_sclk <= sclk; -- Raw SCLK
-                -- You might want LEDs to reflect sampled values, move inside the sampling block if needed
-
-                -- On FALLING edge of SCLK, sample signals and store to buffer -- *** CHANGED TRIGGER ***
-                if sclk_falling = '1' then
-                    -- Sample and store SPI signals directly into the buffer data concatenation
-                    -- led_miso, led_mosi, led_cs now reflect the values sampled on the falling edge
+                
+                -- Update status LEDs
+                led_sclk <= sclk;
+                
+                -- On rising edge of SCLK, sample signals and store to buffer
+                if sclk_rising = '1' then
+                    -- Sample and store SPI signals
+                    miso_reg <= miso;
+                    mosi_reg <= mosi;
+                    cs_reg   <= cs;
+                    
+                    -- Update LEDs with current values
                     led_miso <= miso;
                     led_mosi <= mosi;
                     led_cs   <= cs;
-
-                    -- Provide data to output ports using values sampled now (falling edge)
+                    
+                    -- Provide data to output ports
                     buffer_data <= miso & mosi & cs & std_logic_vector(freq_hz) & std_logic_vector(timestamp_counter);
-                    buffer_wr_internal <= '1'; -- Assert write request
+                    buffer_wr_internal <= '1';
                 end if;
-            end if; -- end reset check
-        end if; -- end rising_edge(clk)
+            end if;
+        end if;
     end process;
 end Behavioral;
