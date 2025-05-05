@@ -16,6 +16,9 @@
 
 namespace fs = std::filesystem;
 
+#define LOG_INFO(msg)  std::cout << "[INFO] " << msg << std::endl  // Use clog
+#define LOG_ERROR(msg) std::cerr << "[ERROR] " << msg << std::endl // Keep errors on cerr
+
 // Function to list available UART devices
 std::vector<std::string> list_uart_devices() {
     std::vector<std::string> devices;
@@ -35,7 +38,7 @@ std::vector<std::string> list_uart_devices() {
 bool configure_serial_port(int fd, int baudrate) {
     struct termios2 tio;
     if (ioctl(fd, TCGETS2, &tio) < 0) {
-        std::cerr << "Failed to get termios2: " << strerror(errno) << std::endl;
+        LOG_ERROR("Failed to get termios2: " << strerror(errno));
         return false;
     }
 
@@ -52,7 +55,7 @@ bool configure_serial_port(int fd, int baudrate) {
     tio.c_cc[VTIME] = 0;
 
     if (ioctl(fd, TCSETS2, &tio) < 0) {
-        std::cerr << "Failed to set termios2: " << strerror(errno) << std::endl;
+        LOG_ERROR("Failed to set termios2: " << strerror(errno));
         return false;
     }
 
@@ -78,7 +81,7 @@ void write_pcap_global_header(int fd) {
             // FIFO closed by Wireshark — silently exit
             std::exit(0);
         } else {
-            std::cerr << "[ERROR] write() PCAP header failed: " << strerror(errno) << "\n";
+            LOG_ERROR("write() PCAP header failed: " << strerror(errno));
             std::exit(1);
         }
     }
@@ -95,22 +98,22 @@ struct pcaprec_hdr_t {
 
 // Function to run the extcap capture
 int run_extcap_capture(const std::string& fifo_path, const std::string& device_path, int baudrate, int buffer_size) {
-    std::cerr << "[DEBUG] Entered run_extcap_capture()\n";
+    LOG_INFO("Running extcap capture...");
 
     // Create the FIFO if it doesn't exist
     int fd_fifo = open(fifo_path.c_str(), O_WRONLY);
     if (fd_fifo < 0) {
-        std::cerr << "[ERROR] Could not open FIFO: " << strerror(errno) << "\n";
+        LOG_ERROR("Could not open FIFO: " << fifo_path << " - " << strerror(errno));
         return 1;
     }
 
-    std::cerr << "[DEBUG] Writing PCAP header...\n";
+    LOG_INFO("FIFO opened: " << fifo_path);
     write_pcap_global_header(fd_fifo);
 
     // Open the UART device
     int fd_uart = open(device_path.c_str(), O_RDWR | O_NOCTTY);
     if (fd_uart < 0) {
-        std::cerr << "[ERROR] Could not open UART: " << strerror(errno) << "\n";
+        LOG_ERROR("Could not open UART device: " << device_path << " - " << strerror(errno));
         close(fd_fifo);
         return 1;
     }
@@ -146,7 +149,7 @@ int run_extcap_capture(const std::string& fifo_path, const std::string& device_p
                 if (errno == EPIPE || errno == EBADF) {
                     break; // FIFO closed by Wireshark — exit loop
                 } else {
-                    std::cerr << "[ERROR] write() header failed: " << strerror(errno) << "\n";
+                    LOG_ERROR("write() header failed: " << strerror(errno));
                     break;
                 }
             }
@@ -156,7 +159,7 @@ int run_extcap_capture(const std::string& fifo_path, const std::string& device_p
                 if (errno == EPIPE || errno == EBADF) {
                     break;
                 } else {
-                    std::cerr << "[ERROR] write() data failed: " << strerror(errno) << "\n";
+                    LOG_ERROR("write() data failed: " << strerror(errno));
                     break;
                 }
             }
@@ -173,9 +176,9 @@ int run_extcap_capture(const std::string& fifo_path, const std::string& device_p
 
 // Main function to handle arguments and run the extcap
 int main(int argc, char* argv[]) {
-    std::cerr << "Arguments passed to extcap_uart:\n";
+    LOG_INFO("FPGA UART Extcap started");
     for (int i = 0; i < argc; ++i) {
-        std::cerr << "  argv[" << i << "] = " << argv[i] << "\n";
+        std::cout << "  argv[" << i << "] = " << argv[i] << "\n";
     }
 
     signal(SIGPIPE, SIG_IGN);
@@ -253,17 +256,17 @@ int main(int argc, char* argv[]) {
 
     // Check if we are in capture mode
     if (capture_mode) {
-        std::cerr << "Running capture mode:\n";
-        std::cerr << "  Interface: " << interface_name << "\n";
-        std::cerr << "  FIFO: " << fifo_path << "\n";
-        std::cerr << "  UART: " << selected_device << "\n";
-        std::cerr << "  Baudrate: " << baudrate << "\n";
-        std::cerr << "  Buffer size: " << buffer_size << "\n";
+        LOG_INFO("Capture mode activated");
+        LOG_INFO("Interface: " << interface_name);
+        LOG_INFO("FIFO: " << fifo_path);
+        LOG_INFO("UART: " << selected_device);
+        LOG_INFO("Baudrate: " << baudrate);
+        LOG_INFO("Buffer size: " << buffer_size);
 
         if (!fifo_path.empty() && !selected_device.empty()) {
             return run_extcap_capture(fifo_path, selected_device, baudrate, buffer_size);
         } else {
-            std::cerr << "Missing fifo or serial-device!\n";
+            LOG_ERROR("FIFO path or UART device not specified.");
             return 1;
         }
     }
