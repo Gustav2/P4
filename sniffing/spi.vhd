@@ -5,7 +5,7 @@ use work.constants.all;
 
 entity spi is
     generic (
-        USE_PLL_CONSTANT   : boolean := USE_PLL_CONSTANT
+        USE_PLL_CONSTANT : boolean := USE_PLL_CONSTANT
     );
     Port (
         clk         : in  std_logic;
@@ -18,9 +18,11 @@ entity spi is
         led_mosi    : out std_logic;
         led_cs      : out std_logic;
         led_sclk    : out std_logic;
-        buffer_data : out std_logic_vector(47 downto 0);  -- 48 bits: 16-bit data + 32-bit timestamp
-        buffer_addr : out std_logic_vector(7 downto 0);
-        buffer_wr   : out std_logic
+        
+        -- Modified buffer interface for circular buffer
+        buffer_data : out std_logic_vector(47 downto 0);
+        buffer_wr   : out std_logic;
+        buffer_full : in  std_logic    -- New signal to indicate if buffer is full
     );
 end spi;
 
@@ -35,11 +37,8 @@ architecture Behavioral of spi is
         end if;
     end function;
     
-    
-    signal write_ptr : unsigned(7 downto 0) := (others => '0');
-    
     -- Edge detection
-    signal sclk_prev : std_logic := '0';
+    signal sclk_prev   : std_logic := '0';
     signal sclk_rising : std_logic := '0';
     
     -- Frequency measurement
@@ -53,20 +52,26 @@ architecture Behavioral of spi is
     signal miso_reg, mosi_reg, cs_reg : std_logic;
     
     -- Frequency calculation signals
-    signal system_clk_freq : unsigned(31 downto 0) := to_unsigned(get_clk_freq(USE_PLL_CONSTANT), 32);  -- 12 MHz system clock
+    signal system_clk_freq : unsigned(31 downto 0) := to_unsigned(get_clk_freq(USE_PLL_CONSTANT), 32);
     signal calculated_freq : unsigned(31 downto 0) := (others => '0');
     signal freq_hz        : unsigned(12 downto 0) := (others => '0');
+    
+    -- Buffer write control
+    signal buffer_wr_internal : std_logic := '0';
+    
 begin
+    -- Connect internal write signal to output through buffer full check
+    buffer_wr <= buffer_wr_internal and (not buffer_full);
+    
     process(clk)
     begin
         if rising_edge(clk) then
             if reset = '1' then
-                write_ptr         <= (others => '0');
                 sclk_counter      <= (others => '0');
                 sclk_period       <= (others => '0');
                 timestamp_counter <= (others => '0');
                 sclk_prev         <= '0';
-                buffer_wr         <= '0';
+                buffer_wr_internal <= '0';
                 sclk_rising       <= '0';
                 calculated_freq   <= (others => '0');
                 freq_hz           <= (others => '0');
@@ -75,7 +80,7 @@ begin
                 timestamp_counter <= timestamp_counter + 1;
                 
                 -- Default state
-                buffer_wr <= '0';
+                buffer_wr_internal <= '0';
                 sclk_rising <= '0';
                 
                 -- Edge detection
@@ -115,11 +120,7 @@ begin
                     
                     -- Provide data to output ports
                     buffer_data <= miso & mosi & cs & std_logic_vector(freq_hz) & std_logic_vector(timestamp_counter);
-                    buffer_addr <= std_logic_vector(write_ptr);
-                    buffer_wr   <= '1';
-                    
-                    -- Increment write pointer
-                    write_ptr <= write_ptr + 1;
+                    buffer_wr_internal <= '1';
                 end if;
             end if;
         end if;
