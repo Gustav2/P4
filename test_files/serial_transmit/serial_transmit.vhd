@@ -15,7 +15,7 @@ architecture Behavioral of usb_speed_test is
     -- Constants
     constant TEST_SIZE      : integer := 100_000_000;
     constant CLK_FREQ       : integer := 12_000_000;
-    constant BAUD_RATE      : integer := 115_200;
+    constant BAUD_RATE      : integer := 12_000_000;
     constant CYCLES_PER_BIT : integer := CLK_FREQ / BAUD_RATE;
 
     -- State machine
