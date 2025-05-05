@@ -16,8 +16,8 @@
 
 namespace fs = std::filesystem;
 
-#define LOG_INFO(msg)  std::cout << "[INFO] " << msg << std::endl  // Use clog
-#define LOG_ERROR(msg) std::cerr << "[ERROR] " << msg << std::endl // Keep errors on cerr
+#define LOG_INFO(msg)  std::cout << "[INFO] " << msg << std::endl
+#define LOG_ERROR(msg) std::cerr << "[ERROR] " << msg << std::endl
 
 // Function to list available UART devices
 std::vector<std::string> list_uart_devices() {
@@ -181,6 +181,7 @@ int main(int argc, char* argv[]) {
         std::cout << "  argv[" << i << "] = " << argv[i] << "\n";
     }
 
+    // Ignore SIGPIPE to prevent termination on broken pipe
     signal(SIGPIPE, SIG_IGN);
 
     std::string interface_name = "fpga_uart";
@@ -212,9 +213,14 @@ int main(int argc, char* argv[]) {
             } else if (arg == "--extcap-config") {
                 // UART device selection
                 std::cout << "arg {number=0}{call=--serial-device}{display=Serial Device}"
-                             "{tooltip=Select the UART device}{type=selector}{required=true}{group=UART}\n";
-                for (const auto& dev : list_uart_devices()) {
-                    std::cout << "value {arg=0}{value=" << dev << "}{display=" << dev << "}\n";
+                             "{tooltip=Select the UART device}{type=selector}{required=true}{group=UART}{reload=true}\n";
+                auto devices = list_uart_devices();
+                if (devices.empty()) {
+                    std::cout << "value {arg=0}{value=none}{display=No UART devices found}\n";
+                } else {
+                    for (const auto& dev : devices) {
+                        std::cout << "value {arg=0}{value=" << dev << "}{display=" << dev << "}\n";
+                    }
                 }
 
                 // Baudrate selection
