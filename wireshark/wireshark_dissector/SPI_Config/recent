@@ -43,7 +43,7 @@ gui.packet_list_colorize: TRUE
 
 # Auto scroll packet list when capturing.
 # TRUE or FALSE (case-insensitive).
-capture.auto_scroll: TRUE
+capture.auto_scroll: FALSE
 
 # Timestamp display format.
 # One of: RELATIVE, ABSOLUTE, ABSOLUTE_WITH_YMD, ABSOLUTE_WITH_YDOY, ABSOLUTE_WITH_DATE, DELTA, DELTA_DIS, EPOCH, UTC, UTC_WITH_YMD, UTC_WITH_YDOY, UTC_WITH_DATE
@@ -67,7 +67,7 @@ gui.bytes_view: HEX
 
 # Bytes view text encoding.
 # One of: FROM_PACKET, ASCII, EBCDIC
-gui.bytes_encoding: FROM_PACKET
+gui.bytes_encoding: ASCII
 
 # Packet diagram field values show (hide).
 # TRUE or FALSE (case-insensitive).
@@ -95,26 +95,35 @@ gui.geometry_main_upper_pane: 606
 
 # Main window middle pane size.
 # Decimal number.
-gui.geometry_main_lower_pane: 955
+gui.geometry_main_lower_pane: 1118
 
 # Packet list column pixel widths.
 # Each pair of strings consists of a column format and its pixel width.
 column.width:
-        %m, 62:L,
-        %t, 209:C,
+        %m, 61:L,
+        %t, 132:C,
+        "%Cus:spi.timestamp", 130:L,
         %s, 189,
-        %d, 189,
-        %p, 143,
-        %L, 150:L,
-        "%Cus:spi.mosi", 150:L,
-        "%Cus:spi.miso", 150:L,
-        "%Cus:spi.cs", 150:L,
-        "%Cus:spi.timestamp", 909:L,
-        %i, 420
+        %d, 128,
+        %p, 90,
+        %L, 85:L,
+        "%Cus:spi.mosi", 118:L,
+        "%Cus:spi.miso", 66:L,
+        "%Cus:spi.cs", 92:L,
+        %i, 136,
+        "%Cus:spi.sclk", 1237:C,
+        "%Cus:spi.info", 195,
+        "%Cus:spi.mosi_full_ascii", 213,
+        "%Cus:spi.mosi_full_hex", 203,
+        "%Cus:spi.miso_full_ascii", 213,
+        "%Cus:spi.miso_full_hex", 203
 
 # Open conversation dialog tabs.
 # List of conversation names, e.g. "TCP", "IPv6".
 gui.conversation_tabs: 
+	"Ethernet", "IPv4",
+	"IPv6", "TCP",
+	"UDP", "USB"
 
 # Conversation dialog tabs columns.
 # List of conversation columns numbers.
@@ -131,6 +140,9 @@ gui.endpoint_tabs_columns:
 # For RLC stats, whether to use RLC PDUs found inside MAC frames.
 # TRUE or FALSE (case-insensitive).
 gui.rlc_pdus_from_mac_frames: FALSE
+
+# Last directory navigated to in File Open dialog.
+gui.fileopen_remembered_dir: /home/maunus/Downloads/
 
 # Additional Toolbars shown
 # List of additional toolbars to show.

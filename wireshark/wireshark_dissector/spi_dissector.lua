@@ -57,8 +57,10 @@ function proto_spi.dissector(buffer, pinfo, tree)
                                         fourth_byte, fifth_byte, sixth_byte) -- the four timestamp bytes as string
 
   -- Extract bits 3-15 (sclk_freq)
-  local sclk_freq = bit.rshift(bit.band(first_byte, 0xF8), 3) -- Extract bits 3-7 and shift them to the least significant position
-  sclk_freq = bit.bor(sclk_freq, bit.lshift(second_byte, 5)) -- Combine with bits 8-15
+  local first_sclk_freq = bit.band(first_byte, 0x1F) -- bit 0-4
+  local second_sclk_freq = buffer(1, 1):uint() -- bit 8-15
+  
+  local sclk_freq = bit.lshift(first_sclk_freq, 8) + second_sclk_freq -- combine the two bytes
 
   -- Adding all the tree items (displays in the order they are added but columns must be manually configured)
   payload_tree:add(f_cs, buffer(0, 1), bit.band(first_byte, 0x20) ~= 0) -- bit 5
