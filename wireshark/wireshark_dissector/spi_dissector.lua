@@ -1,6 +1,6 @@
 -- Create the protocol and subdissector
 local proto_spi = Proto.new("SPI", "SPI Protocol")
-local spi_post = Proto("SPI_Post", "Grouped SPI Message")
+local spi_post = Proto("0_SPI_Custom", "Grouped SPI Message")
 
 -- Function for wireshark to call
 function proto_spi.dissector(buffer, pinfo, tree)
@@ -9,12 +9,14 @@ end
 -- User preferences (subdissector)
 spi_post.prefs.bits_per_word = Pref.uint("Bits per word", 8, "Number of bits per words (usually 8)")
 spi_post.prefs.packets_per_message = Pref.uint("Words per message", 3, "Number of words in one SPI message")
+spi_post.prefs.sclk_adjust = Pref.uint("SCLK scaling factor", 6104, "Multiplier to compute SCLK frequency (Hz = raw * factor)")
 
 -- Protocol fields
 local f_miso = ProtoField.bool("spi.miso", "MISO", base.NONE)
 local f_mosi = ProtoField.bool("spi.mosi", "MOSI", base.NONE)
 local f_cs = ProtoField.bool("spi.cs", "CS", base.NONE)
 local f_sclk = ProtoField.uint16("spi.sclk", "SCLK", base.DEC)
+local f_sclk_display = ProtoField.string("spi.sclk_display", "SCLK")
 local f_timestamp = ProtoField.uint32("spi.timestamp", "Timestamp", base.DEC)
 local f_group_info = ProtoField.string("spi.info", "SPI Message Group")
 local f_mosi_full_ascii = ProtoField.string("spi.mosi_full_ascii", "MOSI Full Message (ASCII)")
@@ -22,12 +24,14 @@ local f_mosi_full_hex   = ProtoField.string("spi.mosi_full_hex", "MOSI Full Mess
 local f_miso_full_ascii = ProtoField.string("spi.miso_full_ascii", "MISO Full Message (ASCII)")
 local f_miso_full_hex   = ProtoField.string("spi.miso_full_hex", "MISO Full Message (Hex)")
 
+
 -- The thing that is called to display the fields (i think?)
 proto_spi.fields = {
   f_miso,
   f_mosi,
   f_cs,
   f_sclk,
+  f_sclk_display, 
   f_timestamp,
   f_group_info,
   f_mosi_full_ascii,
@@ -60,13 +64,18 @@ function proto_spi.dissector(buffer, pinfo, tree)
   local first_sclk_freq = bit.band(first_byte, 0x1F) -- bit 0-4
   local second_sclk_freq = buffer(1, 1):uint() -- bit 8-15
   
+
   local sclk_freq = bit.lshift(first_sclk_freq, 8) + second_sclk_freq -- combine the two bytes
+  local sclk_adjust = spi_post.prefs.sclk_adjust
+  local mhz_sclk_freq = (sclk_freq * sclk_adjust) / 1000000 -- Convert to MHz
+  local display_sclk_freq = mhz_sclk_freq >= 1 and string.format("%.1f MHz", mhz_sclk_freq) or string.format("%d kHz", mhz_sclk_freq * 1000)
 
   -- Adding all the tree items (displays in the order they are added but columns must be manually configured)
   payload_tree:add(f_cs, buffer(0, 1), bit.band(first_byte, 0x20) ~= 0) -- bit 5
   payload_tree:add(f_mosi, buffer(0, 1), bit.band(first_byte, 0x40) ~= 0) -- bit 6
   payload_tree:add(f_miso, buffer(0, 1), bit.band(first_byte, 0x80) ~= 0) -- bit 7
-  payload_tree:add(f_sclk, buffer(0, 2), sclk_freq)
+  payload_tree:add(f_sclk_display, buffer(0, 2), display_sclk_freq)
+
   payload_tree:add(f_timestamp, buffer(2, 4), timestamp):append_text(" (Bytes: ".. timestamp_bytes ..")")
 
 end
@@ -168,9 +177,9 @@ function spi_post.dissector(buffer, pinfo, tree)
 
         -- Show both ASCII and Hex
         subtree:add(f_mosi_full_ascii, bits_to_ascii(mosi_bits, bits_per_word))
-        subtree:add(f_mosi_full_hex, bits_to_hex(mosi_bits))
-
         subtree:add(f_miso_full_ascii, bits_to_ascii(miso_bits, bits_per_word))
+
+        subtree:add(f_mosi_full_hex, bits_to_hex(mosi_bits))
         subtree:add(f_miso_full_hex, bits_to_hex(miso_bits))
     end
 end

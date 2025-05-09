@@ -31,7 +31,7 @@
 
 # Directory to start in when opening File Open dialog.
 # A path to a directory
-#gui.fileopen.dir: /home/maunus
+#gui.fileopen.dir: /home/viktor-hansen
 
 # The preview timeout in the File Open dialog
 # A decimal number
@@ -284,12 +284,12 @@ gui.column.format:
 	"MISO", "%Cus:spi.miso:0:R",
 	"CS", "%Cus:spi.cs:0:R",
 	"Info", "%i",
-	"Serial Clock Frequency", "%Cus:spi.sclk:0:R",
+	"SCLK", "%Cus:spi.sclk_display:0:R",
 	"SPI Message Group", "%Cus:spi.info:0:R",
-	"MOSI Full Message (ASCII)", "%Cus:spi.mosi_full_ascii:0:R",
-	"MOSI Full Message (Hex)", "%Cus:spi.mosi_full_hex:0:R",
-	"MISO Full Message (ASCII)", "%Cus:spi.miso_full_ascii:0:R",
-	"MISO Full Message (Hex)", "%Cus:spi.miso_full_hex:0:R"
+	"MOSI (ASCII)", "%Cus:spi.mosi_full_ascii:0:R",
+	"MISO (ASCII)", "%Cus:spi.miso_full_ascii:0:R",
+	"MOSI (Hex)", "%Cus:spi.mosi_full_hex:0:R",
+	"MISO (Hex)", "%Cus:spi.miso_full_hex:0:R"
 
 ####### User Interface: Font ########
 
@@ -442,6 +442,22 @@ gui.qt.font_name: Liberation Mono,11,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
 # A string
 #extcap.fpga_uart.baudrate: 12000000
 
+# Buffer Size
+# A string
+#extcap.fpga_uart.buffersize: 6
+
+# Starting position
+# A string
+#extcap.sdjournal.startfrom: 
+
+# Set the log level
+# A string
+#extcap.sdjournal.loglevel: 
+
+# Use a file for logging
+# A string
+#extcap.sdjournal.logfile: 
+
 # Remote SSH server address
 # A string
 #extcap.ciscodump.remotehost: 
@@ -452,7 +468,7 @@ gui.qt.font_name: Liberation Mono,11,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
 
 # Remote SSH server username
 # A string
-#extcap.ciscodump.remoteusername: maunus
+#extcap.ciscodump.remoteusername: viktor-hansen
 
 # Remote SSH server password
 # Password (never stored on disk)
@@ -472,7 +488,7 @@ gui.qt.font_name: Liberation Mono,11,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
 
 # Remote capture filter
 # A string
-#extcap.ciscodump.remotefilter: deny tcp host fe80::3029:bd91:5140:f6ef any eq 22, deny tcp any eq 22 host fe80::3029:bd91:5140:f6ef, deny tcp host 172.26.50.108 any eq 22, deny tcp any eq 22 host 172.26.50.108, permit ip any any
+#extcap.ciscodump.remotefilter: deny tcp host fe80::de11:54d5:1945:e5a6 any eq 22, deny tcp any eq 22 host fe80::de11:54d5:1945:e5a6, deny tcp host 172.17.0.1 any eq 22, deny tcp any eq 22 host 172.17.0.1, deny tcp host 192.168.1.13 any eq 22, deny tcp any eq 22 host 192.168.1.13, permit ip any any
 
 # Packets to capture
 # A string
@@ -485,6 +501,22 @@ gui.qt.font_name: Liberation Mono,11,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
 # Use a file for logging
 # A string
 #extcap.ciscodump.logfile: 
+
+# Listen port
+# A string
+#extcap.udpdump.port: 5555
+
+# Payload type
+# A string
+#extcap.udpdump.payload: data
+
+# Set the log level
+# A string
+#extcap.udpdump.loglevel: 
+
+# Use a file for logging
+# A string
+#extcap.udpdump.logfile: 
 
 # Remote SSH server address
 # A string
@@ -537,78 +569,6 @@ gui.qt.font_name: Liberation Mono,11,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
 # Use a file for logging
 # A string
 #extcap.wifidump.logfile: 
-
-# Max bytes in a packet
-# A string
-#extcap.randpkt.maxbytes: 5000
-
-# Number of packets
-# A string
-#extcap.randpkt.count: 1000
-
-# Packet delay (ms)
-# A string
-#extcap.randpkt.delay: 0
-
-# Random type
-# A string
-#extcap.randpkt.randomtype: false
-
-# All random packets
-# A string
-#extcap.randpkt.allrandom: false
-
-# Type of packet
-# A string
-#extcap.randpkt.type: 
-
-# Set the log level
-# A string
-#extcap.randpkt.loglevel: 
-
-# Use a file for logging
-# A string
-#extcap.randpkt.logfile: 
-
-# Starting position
-# A string
-#extcap.sdjournal.startfrom: 
-
-# Set the log level
-# A string
-#extcap.sdjournal.loglevel: 
-
-# Use a file for logging
-# A string
-#extcap.sdjournal.logfile: 
-
-# Listen port
-# A string
-#extcap.udpdump.port: 5555
-
-# Payload type
-# A string
-#extcap.udpdump.payload: data
-
-# Set the log level
-# A string
-#extcap.udpdump.loglevel: 
-
-# Use a file for logging
-# A string
-#extcap.udpdump.logfile: 
-
-# Interface index
-# A string
-#extcap.dpauxmon.interface_id: 0
-
-# Set the log level
-# A string
-#extcap.dpauxmon.loglevel: 
-
-# Use a file for logging
-# A string
-#extcap.dpauxmon.logfile: 
 
 # Remote SSH server address
 # A string
@@ -664,7 +624,7 @@ gui.qt.font_name: Liberation Mono,11,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
 
 # Remote capture filter
 # A string
-#extcap.sshdump.remotefilter: not ((host fe80::3029:bd91:5140:f6ef or host 172.26.50.108) and port 22)
+#extcap.sshdump.remotefilter: not ((host fe80::de11:54d5:1945:e5a6 or host 172.17.0.1 or host 192.168.1.13) and port 22)
 
 # Packets to capture
 # A string
@@ -677,6 +637,50 @@ gui.qt.font_name: Liberation Mono,11,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
 # Use a file for logging
 # A string
 #extcap.sshdump.logfile: 
+
+# Max bytes in a packet
+# A string
+#extcap.randpkt.maxbytes: 5000
+
+# Number of packets
+# A string
+#extcap.randpkt.count: 1000
+
+# Packet delay (ms)
+# A string
+#extcap.randpkt.delay: 0
+
+# Random type
+# A string
+#extcap.randpkt.randomtype: false
+
+# All random packets
+# A string
+#extcap.randpkt.allrandom: false
+
+# Type of packet
+# A string
+#extcap.randpkt.type: 
+
+# Set the log level
+# A string
+#extcap.randpkt.loglevel: 
+
+# Use a file for logging
+# A string
+#extcap.randpkt.logfile: 
+
+# Interface index
+# A string
+#extcap.dpauxmon.interface_id: 0
+
+# Set the log level
+# A string
+#extcap.dpauxmon.loglevel: 
+
+# Use a file for logging
+# A string
+#extcap.dpauxmon.logfile: 
 
 ####### Name Resolution ########
 
@@ -5236,6 +5240,10 @@ gui.qt.font_name: Liberation Mono,11,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
 # Number of words in one SPI message
 # A decimal number
 #spi_post.packets_per_message: 3
+
+# Value to time SCLK with (in MHz)
+# A decimal number
+#spi_post.sclk_adjust: 100
 
 # Where available, show which protocol and frame caused this SPRT stream to be created
 # TRUE or FALSE (case-insensitive)

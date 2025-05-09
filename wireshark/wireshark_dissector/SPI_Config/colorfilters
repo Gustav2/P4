@@ -1,4 +1,6 @@
 # This file was created by Wireshark. Edit with care.
+@Bad SPI@frame.len!=6 and spi.cs!=false@[4626,10023,11822][63479,34695,34695]
+@Good SPI@frame.len==6 and spi.cs==false@[58596,65535,51143][4626,10023,11822]
 @Bad TCP@tcp.analysis.flags && !tcp.analysis.window_update && !tcp.analysis.keep_alive && !tcp.analysis.keep_alive_ack@[4626,10023,11822][63479,34695,34695]
 @HSRP State Change@hsrp.state != 8 && hsrp.state != 16@[4626,10023,11822][65535,64764,40092]
 @Spanning Tree Topology  Change@stp.type == 0x80@[4626,10023,11822][65535,64764,40092]
