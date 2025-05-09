@@ -1,5 +1,6 @@
 ﻿<Project>
   <ItemGroup>
+    <File Include="circular_buffer.vhd" />
     <File Include="constants.vhd" />
     <File Include="pll_200mhz.vhd" />
     <File Include="serial_transmit.vhd" />
