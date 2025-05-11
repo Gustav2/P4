@@ -76,9 +76,6 @@ begin
                 sclk_falling       <= '0'; -- Reset added signal
                 calculated_freq    <= (others => '0');
                 freq_hz            <= (others => '0');
-                -- miso_reg        <= '0'; -- Reset if needed
-                -- mosi_reg        <= '0';
-                -- cs_reg          <= '0';
             else
                 -- Timestamp increment
                 timestamp_counter <= timestamp_counter + 1;
@@ -106,25 +103,10 @@ begin
                 -- Calculate actual frequency in Hz (based on rising edge period)
                 -- Ensure calculation runs even if sampling is on falling edge
                 if sclk_rising = '1' then -- Calculate freq when period is updated
-                    if sclk_period > 0 then -- Basic check to avoid division by zero
-                       -- Prevent division if period is larger than system clock freq (should not happen for valid SCLK)
-                       if sclk_period < system_clk_freq then
-                          calculated_freq <= system_clk_freq / sclk_period;
-                          -- Convert and store in 13-bit value. Make sure resize logic is appropriate.
-                          -- If calculated_freq can exceed 2^13, this resize truncates MSBs.
-                          -- Example: 200MHz / 100 (2MHz SCLK period) = 2,000,000.
-                          -- Example: 12MHz / 6 (2MHz SCLK period) = 2,000,000.
-                          -- Need to decide how to represent freq. If it's kHz, divide by 1000.
-                          -- Assuming freq_hz directly stores Hz truncated/resized:
-                          if calculated_freq >= 2**13 then -- Check if frequency exceeds 13 bits (8191 Hz)
-                             freq_hz <= (others => '1'); -- Max value indicate overflow or high freq
-                          else
-                             freq_hz <= resize(calculated_freq, 13);
-                          end if;
-                       else
-                          calculated_freq <= (others => '0');
-                          freq_hz <= (others => '0');
-                       end if;
+                    if sclk_period > 0 and sclk_period < system_clk_freq then
+                        calculated_freq <= system_clk_freq / sclk_period;
+                        -- Convert and store in 13-bit value
+                        freq_hz <= resize(calculated_freq(31 downto 17), 13);
                     else
                         calculated_freq <= (others => '0');
                         freq_hz <= (others => '0');
