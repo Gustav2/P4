@@ -48,12 +48,12 @@ function proto_spi.dissector(buffer, pinfo, tree)
   local payload_tree = tree:add("SPI Protocol", buffer())
 
   -- Making the fields
-  local first_byte = buffer(0, 1):uint()
+  local first_byte  = buffer(0, 1):uint()
   local second_byte = buffer(1, 1):uint()
-  local third_byte = buffer(2, 1):uint()
+  local third_byte  = buffer(2, 1):uint()
   local fourth_byte = buffer(3, 1):uint()
-  local fifth_byte = buffer(4, 1):uint()
-  local sixth_byte = buffer(5, 1):uint()
+  local fifth_byte  = buffer(4, 1):uint()
+  local sixth_byte  = buffer(5, 1):uint()
 
   -- Timestamp values in last four bytes
   local timestamp = buffer(2, 4):uint() -- the actual timestamp in clock cycles
