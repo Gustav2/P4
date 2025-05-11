@@ -12,11 +12,10 @@ spi_post.prefs.packets_per_message = Pref.uint("Words per message", 3, "Number o
 spi_post.prefs.sclk_adjust = Pref.uint("SCLK scaling factor", 6104, "Multiplier to compute SCLK frequency (Hz = raw * factor)")
 
 -- Protocol fields
-local f_miso = ProtoField.bool("spi.miso", "MISO", base.NONE)
-local f_mosi = ProtoField.bool("spi.mosi", "MOSI", base.NONE)
-local f_cs = ProtoField.bool("spi.cs", "CS", base.NONE)
-local f_sclk = ProtoField.uint16("spi.sclk", "SCLK", base.DEC)
-local f_sclk_display = ProtoField.string("spi.sclk_display", "SCLK")
+local f_miso = ProtoField.bool("spi.miso", "MISO", base.NONE, { [1] = "HIGH", [2] = "LOW" })
+local f_mosi = ProtoField.bool("spi.mosi", "MOSI", base.NONE, { [1] = "HIGH", [2] = "LOW" })
+local f_cs = ProtoField.bool("spi.cs", "CS", base.NONE, { [1] = "HIGH", [2] = "LOW" })
+local f_sclk = ProtoField.string("spi.sclk_display", "SCLK")
 local f_timestamp = ProtoField.uint32("spi.timestamp", "Timestamp", base.DEC)
 local f_group_info = ProtoField.string("spi.info", "SPI Message Group")
 local f_mosi_full_ascii = ProtoField.string("spi.mosi_full_ascii", "MOSI Full Message (ASCII)")
@@ -24,14 +23,12 @@ local f_mosi_full_hex   = ProtoField.string("spi.mosi_full_hex", "MOSI Full Mess
 local f_miso_full_ascii = ProtoField.string("spi.miso_full_ascii", "MISO Full Message (ASCII)")
 local f_miso_full_hex   = ProtoField.string("spi.miso_full_hex", "MISO Full Message (Hex)")
 
-
--- The thing that is called to display the fields (i think?)
+-- Assigning the fields to the protocol object
 proto_spi.fields = {
   f_miso,
   f_mosi,
   f_cs,
   f_sclk,
-  f_sclk_display, 
   f_timestamp,
   f_group_info,
   f_mosi_full_ascii,
@@ -44,16 +41,21 @@ function proto_spi.dissector(buffer, pinfo, tree)
   -- What displays in the "protocol" column
   pinfo.cols.protocol = "SPI Sniffer"
 
-  -- A subtree where the payload is the "buffer" input
-  local payload_tree = tree:add("SPI Protocol", buffer())
+  -- Creating a main tree where the full buffer is included
+  local spi_tree = tree:add("SPI Protocol", buffer())
 
-  -- Making the fields
+  -- Seperating the bytes
   local first_byte  = buffer(0, 1):uint()
   local second_byte = buffer(1, 1):uint()
   local third_byte  = buffer(2, 1):uint()
   local fourth_byte = buffer(3, 1):uint()
   local fifth_byte  = buffer(4, 1):uint()
   local sixth_byte  = buffer(5, 1):uint()
+
+  -- Extracting the bits
+  local cs_bit = bit.band(first_byte, 0x20) ~= 0 -- bit 5
+  local mosi_bit = bit.band(first_byte, 0x40) ~= 0 -- bit 6
+  local miso_bit = bit.band(first_byte, 0x80) ~= 0 -- bit 7
 
   -- Timestamp values in last four bytes
   local timestamp = buffer(2, 4):uint() -- the actual timestamp in clock cycles
@@ -64,19 +66,17 @@ function proto_spi.dissector(buffer, pinfo, tree)
   local first_sclk_freq = bit.band(first_byte, 0x1F) -- bit 0-4
   local second_sclk_freq = buffer(1, 1):uint() -- bit 8-15
   
-
   local sclk_freq = bit.lshift(first_sclk_freq, 8) + second_sclk_freq -- combine the two bytes
   local sclk_adjust = spi_post.prefs.sclk_adjust
   local mhz_sclk_freq = (sclk_freq * sclk_adjust) / 1000000 -- Convert to MHz
   local display_sclk_freq = mhz_sclk_freq >= 1 and string.format("%.1f MHz", mhz_sclk_freq) or string.format("%d kHz", mhz_sclk_freq * 1000)
 
-  -- Adding all the tree items (displays in the order they are added but columns must be manually configured)
-  payload_tree:add(f_cs, buffer(0, 1), bit.band(first_byte, 0x20) ~= 0) -- bit 5
-  payload_tree:add(f_mosi, buffer(0, 1), bit.band(first_byte, 0x40) ~= 0) -- bit 6
-  payload_tree:add(f_miso, buffer(0, 1), bit.band(first_byte, 0x80) ~= 0) -- bit 7
-  payload_tree:add(f_sclk_display, buffer(0, 2), display_sclk_freq)
-
-  payload_tree:add(f_timestamp, buffer(2, 4), timestamp):append_text(" (Bytes: ".. timestamp_bytes ..")")
+  -- Adding subtrees for each field (this is the order they will be displayed in the subtree)
+  spi_tree:add(f_mosi, buffer(0, 1), mosi_bit)
+  spi_tree:add(f_miso, buffer(0, 1), miso_bit)
+  spi_tree:add(f_cs, buffer(0, 1), cs_bit)
+  spi_tree:add(f_sclk, buffer(0, 2), display_sclk_freq)
+  spi_tree:add(f_timestamp, buffer(2, 4), timestamp):append_text(" (Bytes: ".. timestamp_bytes ..")")
 
 end
 
