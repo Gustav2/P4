@@ -2,14 +2,10 @@
 local proto_spi = Proto.new("SPI", "SPI Protocol")
 local spi_post = Proto("0_SPI_Custom", "Grouped SPI Message")
 
--- Function for wireshark to call
-function proto_spi.dissector(buffer, pinfo, tree)
-end
-
--- User preferences (subdissector)
+-- User preferences
 spi_post.prefs.bits_per_word = Pref.uint("Bits per word", 8, "Number of bits per words (usually 8)")
 spi_post.prefs.packets_per_message = Pref.uint("Words per message", 3, "Number of words in one SPI message")
-spi_post.prefs.sclk_adjust = Pref.uint("SCLK scaling factor", 6104, "Multiplier to compute SCLK frequency (Hz = raw * factor)")
+spi_post.prefs.sclk_adjust = Pref.uint("SCLK scaling factor", 131072, "Multiplier to compute SCLK frequency (Hz = raw * factor)")
 
 -- Protocol fields
 local f_miso = ProtoField.bool("spi.miso", "MISO", base.NONE, { [1] = "HIGH", [2] = "LOW" })
@@ -77,7 +73,6 @@ function proto_spi.dissector(buffer, pinfo, tree)
   spi_tree:add(f_cs, buffer(0, 1), cs_bit)
   spi_tree:add(f_sclk, buffer(0, 2), display_sclk_freq)
   spi_tree:add(f_timestamp, buffer(2, 4), timestamp):append_text(" (Bytes: ".. timestamp_bytes ..")")
-
 end
 
 -- Global data (reset at each capture load)
