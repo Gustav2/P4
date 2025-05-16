@@ -7,7 +7,7 @@
     <File Include="serial_transmit_tb.vhd" Passive="true" />
     <File Include="spi.vhd" />
     <File Include="spi_tb.vcd" />
-    <File Include="spi_tb.vhd" />
+    <File Include="spi_tb.vhd" Passive="true" />
     <File Include="top.vhd" />
     <File Include="uart_transmitter_tb.vcd" />
   </ItemGroup>

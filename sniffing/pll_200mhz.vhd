@@ -76,13 +76,13 @@ ARCHITECTURE rtl OF pll_200mhz IS
         clk         : OUT STD_LOGIC_VECTOR (4 DOWNTO 0);
         locked      : OUT STD_LOGIC
     );
-    END COMPONENT;
+END COMPONENT;
 
     -- Signal declarations
-    SIGNAL sub_wire0    : STD_LOGIC_VECTOR (4 DOWNTO 0);
-    SIGNAL sub_wire1    : STD_LOGIC;
-    SIGNAL sub_wire2    : STD_LOGIC;
-    SIGNAL inclk_wire   : STD_LOGIC_VECTOR (1 DOWNTO 0);
+SIGNAL sub_wire0    : STD_LOGIC_VECTOR (4 DOWNTO 0);
+SIGNAL sub_wire1    : STD_LOGIC;
+SIGNAL sub_wire2    : STD_LOGIC;
+SIGNAL inclk_wire   : STD_LOGIC_VECTOR (1 DOWNTO 0);
 
 BEGIN
     -- Set up the inclk vector

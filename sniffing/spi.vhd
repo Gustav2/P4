@@ -4,9 +4,6 @@ use IEEE.NUMERIC_STD.ALL;
 use work.constants.all;
 
 entity spi is
-    generic (
-        USE_PLL_CONSTANT : boolean := USE_PLL_CONSTANT
-    );
     Port (
         clk         : in  std_logic;
         reset       : in  std_logic;

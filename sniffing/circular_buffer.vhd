@@ -1,28 +1,24 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
+use work.constants.all;
 
 entity circular_buffer is
-    generic (
-        DATA_WIDTH : integer := 48;   -- Width of data bus (48 bits for SPI + timestamp)
-        ADDR_WIDTH : integer := 8     -- Buffer size of 2^8 = 256 entries
-    );
     port (
         clk         : in  std_logic;
         reset       : in  std_logic;  -- Active high reset
         
         -- Write port (from SPI sniffer)
-        wr_data     : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+        wr_data     : in  std_logic_vector(BUFFER_WIDTH_CONSTANT-1 downto 0);
         wr_en       : in  std_logic;
         
         -- Read port (to UART transmitter)
-        rd_data     : out std_logic_vector(DATA_WIDTH-1 downto 0);
+        rd_data     : out std_logic_vector(BUFFER_WIDTH_CONSTANT-1 downto 0);
         rd_en       : in  std_logic;
         
         -- Status signals
         empty       : out std_logic;
         full        : out std_logic;
-        data_count  : out std_logic_vector(ADDR_WIDTH downto 0);  -- Number of entries in buffer
         
         -- Read valid signal (to sync with UART)
         rd_valid    : out std_logic
@@ -31,16 +27,16 @@ end entity circular_buffer;
 
 architecture Behavioral of circular_buffer is
     -- Calculate buffer size
-    constant BUFFER_DEPTH : integer := 2**ADDR_WIDTH;
+    constant BUFFER_DEPTH : integer := 2**BUFFER_DEPTH_CONSTANT;
     
     -- Buffer memory
-    type buffer_array is array (0 to BUFFER_DEPTH-1) of std_logic_vector(DATA_WIDTH-1 downto 0);
+    type buffer_array is array (0 to BUFFER_DEPTH-1) of std_logic_vector(BUFFER_WIDTH_CONSTANT-1 downto 0);
     signal buffer_mem : buffer_array := (others => (others => '0'));
     
     -- Pointers and status
-    signal wr_ptr      : unsigned(ADDR_WIDTH-1 downto 0) := (others => '0');
-    signal rd_ptr      : unsigned(ADDR_WIDTH-1 downto 0) := (others => '0');
-    signal count       : unsigned(ADDR_WIDTH downto 0) := (others => '0');
+    signal wr_ptr      : unsigned(BUFFER_DEPTH_CONSTANT-1 downto 0) := (others => '0');
+    signal rd_ptr      : unsigned(BUFFER_DEPTH_CONSTANT-1 downto 0) := (others => '0');
+    signal count       : unsigned(BUFFER_DEPTH_CONSTANT downto 0) := (others => '0');
     signal empty_i     : std_logic := '1';
     signal full_i      : std_logic := '0';
     signal rd_valid_i  : std_logic := '0';
@@ -49,7 +45,6 @@ begin
     -- Connect internal status signals to outputs
     empty <= empty_i;
     full <= full_i;
-    data_count <= std_logic_vector(count);
     rd_valid <= rd_valid_i;
     
     -- Buffer process
