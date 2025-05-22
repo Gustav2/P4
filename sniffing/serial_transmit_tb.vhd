@@ -57,37 +57,37 @@ begin
     -- Stimulus process
     stim_proc: process
     begin
-      
+        reset <= '1';
+        wait for CLK_PERIOD;
+        reset <= '0';
+        wait for CLK_PERIOD;
         
         buffer_data <= x"48656c6c6f20";  -- "HELLO " in ASCII
         wait for CLK_PERIOD;
         
-        -- Wait for transmission to complete using tx_done signal
         wait until tx_done = '1';
-        wait for CLK_PERIOD;  -- Allow one extra clock cycle after tx_done
+        wait for CLK_PERIOD;
         
         buffer_data <= x"526f68646520";
         wait for CLK_PERIOD;
         
-        -- Wait for transmission to complete using tx_done signal
         wait until tx_done = '1';
-        wait for CLK_PERIOD;  -- Allow one extra clock cycle after tx_done
+        wait for CLK_PERIOD;
         
         buffer_data <= x"616e64205363";
         wait for CLK_PERIOD;
         
-        -- Wait for transmission to complete using tx_done signal
         wait until tx_done = '1';
-        wait for CLK_PERIOD;  -- Allow one extra clock cycle after tx_done
+        wait for CLK_PERIOD;
         
         buffer_data <= x"687761727a20";
         wait for CLK_PERIOD;
         
-        -- Wait for transmission to complete using tx_done or tx_busy signals
         wait until tx_done = '1';
-        wait for CLK_PERIOD;  -- Allow one extra clock cycle after tx_done
+        wait for CLK_PERIOD;
 
         buffer_empty <= '1';
+        wait for CLK_PERIOD;
         std.env.stop;
     end process;
 end sim;

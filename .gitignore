@@ -57,5 +57,4 @@ work-obj08.cf
 
 # simulation files
 *.vcd
-*.toml
 temp/
