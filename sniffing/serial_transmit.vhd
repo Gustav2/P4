@@ -142,19 +142,19 @@ architecture Behavioral of uart_transmitter is
                         
                         -- Extract the current byte to send based on byte_index (MSB first)
                         case byte_index is
-                            when 0 => current_byte <= current_data(47 downto 40);  -- Most significant byte first
+                            when 0 => current_byte <= current_data(47 downto 40);
                             when 1 => current_byte <= current_data(39 downto 32);
                             when 2 => current_byte <= current_data(31 downto 24);
                             when 3 => current_byte <= current_data(23 downto 16);
                             when 4 => current_byte <= current_data(15 downto 8);
-                            when 5 => current_byte <= current_data(7 downto 0);    -- Least significant byte last
+                            when 5 => current_byte <= current_data(7 downto 0);
                             when others => current_byte <= X"00";  -- Safety case, should never occur
                         end case;
                         bit_timer <= 0;
                         tx_state <= ST_START_BIT;
                         
                     when ST_START_BIT =>
-                        uart_txd <= '0';  -- Start bit (always 0)
+                        uart_txd <= '0';  -- Start bit
                         bit_counter <= 0;  -- Reset bit counter for upcoming data bits
                         
                         -- Wait for the full bit period using bit_timer
@@ -184,7 +184,7 @@ architecture Behavioral of uart_transmitter is
                         end if;
                         
                     when ST_STOP_BIT =>
-                        uart_txd <= '1';  -- Stop bit (always 1)
+                        uart_txd <= '1';  -- Stop bit
                         
                         -- Wait for the full bit period
                         if bit_timer = CYCLES_PER_BIT-1 then
