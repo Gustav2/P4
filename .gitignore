@@ -50,6 +50,7 @@ local_testing/
 
 # work files for ghdl simulation
 work-obj93.cf
+
 work-obj08.cf 
 
 # aux files 
@@ -59,3 +60,4 @@ work-obj08.cf
 *.vcd
 *.toml
 temp/
+venv/
