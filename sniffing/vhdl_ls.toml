@@ -1,0 +1,24 @@
+# auto-generated
+[Libraries]
+work.files = [
+	'circular_buffer.vhd',
+	'constants.vhd',
+	'pll_200mhz.vhd',
+	'serial_transmit.vhd',
+	'serial_transmit_tb.vhd',
+	'spi.vhd',
+	'spi_tb.vhd',
+	'top.vhd'
+]
+[libraries.work]
+files = [
+	'circular_buffer.vhd',
+	'constants.vhd',
+	'pll_200mhz.vhd',
+	'serial_transmit.vhd',
+	'serial_transmit_tb.vhd',
+	'spi.vhd',
+	'spi_tb.vhd',
+	'top.vhd'
+]
+# auto-generated-end

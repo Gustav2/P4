@@ -67,7 +67,6 @@ architecture Behavioral of uart_transmitter is
     -- UART State machine
     type tx_state_type is (
             ST_IDLE,        -- Wait for transmission request
-            ST_FETCH_DATA,  -- Read data from circular buffer
             ST_LOAD_BYTE,   -- Prepare the current byte for transmission
             ST_START_BIT,   -- Send UART start bit
             ST_DATA_BITS,   -- Send 8 data bits
@@ -80,19 +79,10 @@ architecture Behavioral of uart_transmitter is
         signal bit_counter     : integer range 0 to 7 := 0;                         -- Counts bits within a byte
         signal byte_index      : integer range 0 to 5 := 0;                         -- Tracks which byte (0-5) is being sent
         signal bytes_sent      : unsigned(31 downto 0) := (others => '0');          -- Total bytes sent (diagnostic)
-        signal current_data    : std_logic_vector(47 downto 0) := (others => '0');  -- Captured data from buffer
         signal current_byte    : std_logic_vector(7 downto 0) := (others => '0');   -- Current byte being transmitted
         signal bit_timer       : integer range 0 to CYCLES_PER_BIT-1 := 0;          -- Timing counter for bit transmission
-        signal tx_active       : std_logic := '0';                                  -- Indicates active transmission
-        signal tx_done_pulse   : std_logic := '0';                                  -- Completion pulse
-        signal buffer_rd_i     : std_logic := '0';                                  -- Internal buffer read signal
         
     begin
-        -- Connect status signals
-        tx_busy <= tx_active;
-        tx_done <= tx_done_pulse;
-        buffer_rd <= buffer_rd_i;
-        
         -- Main UART transmitter process
         uart_tx_process: process(clk, reset)
         begin
@@ -102,18 +92,17 @@ architecture Behavioral of uart_transmitter is
                 uart_txd <= '1';  -- Idle high for UART
                 bit_counter <= 0;
                 byte_index <= 0;
-                current_data <= (others => '0');
                 current_byte <= (others => '0');
                 bytes_sent <= (others => '0');
                 bit_timer <= 0;
-                tx_active <= '0';
-                tx_done_pulse <= '0';
-                buffer_rd_i <= '0';
+                tx_busy <= '0';
+                tx_done <= '0';
+                buffer_rd <= '0';
                 
             elsif rising_edge(clk) then
-                -- Default state for tx_done_pulse and buffer_rd (single clock pulse)
-                tx_done_pulse <= '0';
-                buffer_rd_i <= '0';
+                -- Default state for tx_done and buffer_rd (single clock pulse)
+                tx_done <= '0';
+                buffer_rd <= '0';
                 
                 case tx_state is
                     when ST_IDLE =>
@@ -121,40 +110,30 @@ architecture Behavioral of uart_transmitter is
                         bit_timer <= 0;
                         
                         -- Start new transmission when buffer is not empty and not already transmitting
-                        if buffer_empty = '0' and tx_active = '0' then
-                            tx_active <= '1';
-                            tx_state <= ST_FETCH_DATA;
+                        if buffer_empty = '0' and tx_busy = '0' then
+                            buffer_rd <= '1';
+                            byte_index <= 0;
+                            tx_busy <= '1';
+                            tx_state <= ST_LOAD_BYTE;
                         end if;
-                        
-                    when ST_FETCH_DATA =>
-                        -- Assert buffer read signal for one clock cycle
-                        buffer_rd_i <= '1';
-                        -- Data will be available on the next clock cycle
-                        tx_state <= ST_LOAD_BYTE;
-                        byte_index <= 0;
                         
                     when ST_LOAD_BYTE =>
-                        -- Capture the data from buffer
-                        if byte_index = 0 then
-                        -- Only update current_data on the first byte
-                            current_data <= buffer_data;
-                        end if;
                         
                         -- Extract the current byte to send based on byte_index (MSB first)
                         case byte_index is
-                            when 0 => current_byte <= current_data(47 downto 40);  -- Most significant byte first
-                            when 1 => current_byte <= current_data(39 downto 32);
-                            when 2 => current_byte <= current_data(31 downto 24);
-                            when 3 => current_byte <= current_data(23 downto 16);
-                            when 4 => current_byte <= current_data(15 downto 8);
-                            when 5 => current_byte <= current_data(7 downto 0);    -- Least significant byte last
+                            when 0 => current_byte <= buffer_data(47 downto 40);
+                            when 1 => current_byte <= buffer_data(39 downto 32);
+                            when 2 => current_byte <= buffer_data(31 downto 24);
+                            when 3 => current_byte <= buffer_data(23 downto 16);
+                            when 4 => current_byte <= buffer_data(15 downto 8);
+                            when 5 => current_byte <= buffer_data(7 downto 0);
                             when others => current_byte <= X"00";  -- Safety case, should never occur
                         end case;
                         bit_timer <= 0;
                         tx_state <= ST_START_BIT;
                         
                     when ST_START_BIT =>
-                        uart_txd <= '0';  -- Start bit (always 0)
+                        uart_txd <= '0';  -- Start bit
                         bit_counter <= 0;  -- Reset bit counter for upcoming data bits
                         
                         -- Wait for the full bit period using bit_timer
@@ -184,7 +163,7 @@ architecture Behavioral of uart_transmitter is
                         end if;
                         
                     when ST_STOP_BIT =>
-                        uart_txd <= '1';  -- Stop bit (always 1)
+                        uart_txd <= '1';  -- Stop bit
                         
                         -- Wait for the full bit period
                         if bit_timer = CYCLES_PER_BIT-1 then
@@ -202,8 +181,8 @@ architecture Behavioral of uart_transmitter is
                             tx_state <= ST_LOAD_BYTE;
                         else
                             -- All 6 bytes from this buffer entry have been sent
-                            tx_active <= '0';     -- Release transmitter
-                            tx_done_pulse <= '1'; -- Signal completion
+                            tx_busy <= '0';     -- Release transmitter
+                            tx_done <= '1'; -- Signal completion
                             tx_state <= ST_IDLE;  -- Return to idle state
                         end if;
                 end case;
